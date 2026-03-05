@@ -21,6 +21,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Register global hotkey
         HotkeyManager.shared.register()
 
+        // Auto-load the selected transcription model so the user doesn't have to press Load each launch
+        autoLoadTranscriptionModel()
+
         // Observe recording state to show/hide floating overlay
         stateCancellable = RecordingCoordinator.shared.$state
             .receive(on: RunLoop.main)
@@ -79,6 +82,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                         message: "Oral Scribe needs speech recognition access. Please enable it in System Settings > Privacy & Security > Speech Recognition."
                     )
                 }
+            }
+        }
+    }
+
+    private func autoLoadTranscriptionModel() {
+        Task { @MainActor in
+            let settings = SettingsManager.shared
+            switch settings.transcriptionBackend {
+            case .whisperCpp:
+                let modelId = settings.whisperCppModel
+                let model = SwiftWhisperManager.availableModels.first { $0.id == modelId }
+                    ?? SwiftWhisperManager.availableModels[0]
+                if SwiftWhisperManager.shared.isDownloaded(model) {
+                    await SwiftWhisperManager.shared.downloadAndLoad(modelId: modelId)
+                }
+            case .whisperKit:
+                let modelId = settings.whisperKitModel
+                await WhisperKitManager.shared.downloadAndLoad(model: modelId)
+            default:
+                break
             }
         }
     }

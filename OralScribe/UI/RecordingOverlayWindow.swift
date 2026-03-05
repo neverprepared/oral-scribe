@@ -7,7 +7,7 @@ final class RecordingOverlayWindow: NSPanel {
 
     init() {
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 280, height: 60),
+            contentRect: NSRect(x: 0, y: 0, width: 310, height: 60),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -23,14 +23,14 @@ final class RecordingOverlayWindow: NSPanel {
         let pillView = RecordingPillView()
             .environmentObject(RecordingCoordinator.shared)
         let hostingView = NSHostingView(rootView: pillView)
-        hostingView.frame = NSRect(x: 0, y: 0, width: 280, height: 60)
+        hostingView.frame = NSRect(x: 0, y: 0, width: 310, height: 60)
         contentView = hostingView
     }
 
     func showOverlay() {
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame
-            let x = screenFrame.midX - 140
+            let x = screenFrame.midX - 155
             let y = screenFrame.minY + 100
             setFrameOrigin(NSPoint(x: x, y: y))
         }
@@ -86,7 +86,20 @@ struct RecordingPillView: View {
                 }
                 .frame(maxWidth: .infinity)
 
-                // Cancel button
+                // Stop button (finishes recording and runs pipeline)
+                Button {
+                    coordinator.toggle()
+                } label: {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.9))
+                        .frame(width: 24, height: 24)
+                        .background(Color.red.opacity(0.6))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+
+                // Cancel button (discards recording)
                 Button {
                     coordinator.cancel()
                 } label: {
@@ -101,7 +114,7 @@ struct RecordingPillView: View {
             }
             .padding(.horizontal, 14)
         }
-        .frame(width: 280, height: 60)
+        .frame(width: 310, height: 60)
         .onChange(of: coordinator.powerLevel) { _ in
             updateBars()
         }

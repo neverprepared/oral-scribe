@@ -100,6 +100,21 @@ jobs:
             -exportPath "$EXPORT_PATH" \
             -exportOptionsPlist build/ExportOptions.plist
 
+      - name: Re-sign with entitlements
+        run: |
+          codesign --force --options runtime \
+            --entitlements OralScribe/OralScribe.entitlements \
+            --sign "${{ secrets.MACOS_IDENTITY }}" \
+            "$EXPORT_PATH/OralScribe.app"
+
+      - name: Verify entitlements
+        run: |
+          echo "Embedded entitlements:"
+          codesign -d --entitlements :- "$EXPORT_PATH/OralScribe.app"
+          echo ""
+          echo "Signature verification:"
+          codesign --verify --deep --strict "$EXPORT_PATH/OralScribe.app"
+
       # ── Notarization ─────────────────────────────────────────────────────
 
       - name: Notarize

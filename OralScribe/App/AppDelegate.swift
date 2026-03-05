@@ -46,15 +46,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func requestMicrophonePermission() {
-        AVCaptureDevice.requestAccess(for: .audio) { granted in
-            if !granted {
-                DispatchQueue.main.async {
-                    self.showPermissionAlert(
-                        title: "Microphone Access Required",
-                        message: "Oral Scribe needs microphone access to record your voice. Please enable it in System Settings > Privacy & Security > Microphone."
-                    )
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized:
+            return  // Already granted
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .audio) { granted in
+                if !granted {
+                    DispatchQueue.main.async {
+                        self.showPermissionAlert(
+                            title: "Microphone Access Required",
+                            message: "Oral Scribe needs microphone access to record your voice. Please enable it in System Settings > Privacy & Security > Microphone."
+                        )
+                    }
                 }
             }
+        case .denied, .restricted:
+            showPermissionAlert(
+                title: "Microphone Access Required",
+                message: "Oral Scribe needs microphone access to record your voice. Please enable it in System Settings > Privacy & Security > Microphone."
+            )
+        @unknown default:
+            break
         }
     }
 

@@ -68,7 +68,7 @@ class AudioRecorder: ObservableObject {
 
     func exportToWAV() throws -> URL {
         let tempURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("vivavoce_\(Date().timeIntervalSince1970).wav")
+            .appendingPathComponent("oralscribe_\(Date().timeIntervalSince1970).wav")
 
         guard !recordingBuffers.isEmpty,
               let firstBuffer = recordingBuffers.first else {

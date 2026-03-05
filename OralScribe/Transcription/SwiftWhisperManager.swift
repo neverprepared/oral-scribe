@@ -63,7 +63,7 @@ class SwiftWhisperManager: ObservableObject {
 
     static var modelsDirectory: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = appSupport.appendingPathComponent("VivaVoce/WhisperCpp", isDirectory: true)
+        let dir = appSupport.appendingPathComponent("OralScribe/WhisperCpp", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }

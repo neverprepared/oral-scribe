@@ -130,7 +130,7 @@ class SettingsManager: ObservableObject {
         static let onDeviceRecognition = "onDeviceRecognition"
         static let whisperKitModel = "whisperKitModel"
         static let whisperCppModel = "whisperCppModel"
-        static let openAIAPIKey = "com.vivavoce.openai-api-key"
+        static let openAIAPIKey = "com.oralscribe.openai-api-key"
         static let ollamaEnabled = "ollamaEnabled"
         static let ollamaHost = "ollamaHost"
         static let ollamaModel = "ollamaModel"

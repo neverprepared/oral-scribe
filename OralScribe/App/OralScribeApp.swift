@@ -2,13 +2,13 @@ import SwiftUI
 import KeyboardShortcuts
 
 @main
-struct VivaVoceApp: App {
+struct OralScribeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var coordinator = RecordingCoordinator.shared
     @StateObject private var settings = SettingsManager.shared
 
     var body: some Scene {
-        WindowGroup("Viva Voce") {
+        WindowGroup("Oral Scribe") {
             AppContentView()
                 .environmentObject(coordinator)
                 .environmentObject(settings)

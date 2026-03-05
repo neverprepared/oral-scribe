@@ -64,7 +64,7 @@ struct MenuBarPopoverView: View {
 
                 Button("Open App") {
                     NSApp.activate(ignoringOtherApps: true)
-                    NSApp.windows.first(where: { $0.title == "Viva Voce" })?.makeKeyAndOrderFront(nil)
+                    NSApp.windows.first(where: { $0.title == "Oral Scribe" })?.makeKeyAndOrderFront(nil)
                 }
                 .buttonStyle(.plain)
                 .foregroundColor(.accentColor)

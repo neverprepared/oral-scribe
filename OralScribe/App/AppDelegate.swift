@@ -51,7 +51,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 DispatchQueue.main.async {
                     self.showPermissionAlert(
                         title: "Microphone Access Required",
-                        message: "Viva Voce needs microphone access to record your voice. Please enable it in System Settings > Privacy & Security > Microphone."
+                        message: "Oral Scribe needs microphone access to record your voice. Please enable it in System Settings > Privacy & Security > Microphone."
                     )
                 }
             }
@@ -64,7 +64,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 DispatchQueue.main.async {
                     self.showPermissionAlert(
                         title: "Speech Recognition Required",
-                        message: "Viva Voce needs speech recognition access. Please enable it in System Settings > Privacy & Security > Speech Recognition."
+                        message: "Oral Scribe needs speech recognition access. Please enable it in System Settings > Privacy & Security > Speech Recognition."
                     )
                 }
             }

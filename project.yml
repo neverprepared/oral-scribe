@@ -1,4 +1,4 @@
-name: VivaVoce
+name: OralScribe
 options:
   deploymentTarget:
     macOS: "13.0"
@@ -18,22 +18,22 @@ packages:
     from: 1.0.0
 
 targets:
-  VivaVoce:
+  OralScribe:
     type: application
     platform: macOS
     deploymentTarget: "13.0"
     sources:
-      - path: VivaVoce
+      - path: OralScribe
         excludes:
           - "Resources/Assets.xcassets"
     resources:
-      - path: VivaVoce/Resources/Assets.xcassets
+      - path: OralScribe/Resources/Assets.xcassets
     info:
-      path: VivaVoce/Info.plist
+      path: OralScribe/Info.plist
       properties:
-        NSMicrophoneUsageDescription: "Viva Voce needs microphone access to record your voice."
-        NSSpeechRecognitionUsageDescription: "Viva Voce uses speech recognition to transcribe your voice."
-        NSAppleEventsUsageDescription: "Viva Voce needs Apple Events access to create notes in Apple Notes."
+        NSMicrophoneUsageDescription: "Oral Scribe needs microphone access to record your voice."
+        NSSpeechRecognitionUsageDescription: "Oral Scribe uses speech recognition to transcribe your voice."
+        NSAppleEventsUsageDescription: "Oral Scribe needs Apple Events access to create notes in Apple Notes."
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
           NSExceptionDomains:
@@ -41,19 +41,19 @@ targets:
               NSExceptionAllowsInsecureHTTPLoads: true
               NSExceptionMinimumTLSVersion: TLSv1.0
               NSIncludesSubdomains: true
-        CFBundleName: Viva Voce
-        CFBundleDisplayName: Viva Voce
-        CFBundleIdentifier: com.vivavoce.app
+        CFBundleName: Oral Scribe
+        CFBundleDisplayName: Oral Scribe
+        CFBundleIdentifier: com.oralscribe.app
         CFBundleVersion: "1"
         CFBundleShortVersionString: "1.0.0"
-        NSHumanReadableCopyright: "Copyright © 2026 Viva Voce. All rights reserved."
+        NSHumanReadableCopyright: "Copyright © 2026 Oral Scribe. All rights reserved."
         LSMinimumSystemVersion: "13.0"
         CFBundleIconFile: AppIcon
     entitlements:
-      path: VivaVoce/VivaVoce.entitlements
+      path: OralScribe/OralScribe.entitlements
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.vivavoce.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.oralscribe.app
         SWIFT_VERSION: "5.9"
         MACOSX_DEPLOYMENT_TARGET: "13.0"
         CODE_SIGN_STYLE: Automatic

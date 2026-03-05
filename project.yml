@@ -1,0 +1,71 @@
+name: VivaVoce
+options:
+  deploymentTarget:
+    macOS: "13.0"
+  defaultConfig: Debug
+  xcodeVersion: "15"
+  generateEmptyDirectories: true
+
+packages:
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: 2.0.0
+  WhisperKit:
+    url: https://github.com/argmaxinc/WhisperKit
+    from: 0.9.0
+  SwiftWhisper:
+    url: https://github.com/exPHAT/SwiftWhisper
+    from: 1.0.0
+
+targets:
+  VivaVoce:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: VivaVoce
+        excludes:
+          - "Resources/Assets.xcassets"
+    resources:
+      - path: VivaVoce/Resources/Assets.xcassets
+    info:
+      path: VivaVoce/Info.plist
+      properties:
+        NSMicrophoneUsageDescription: "Viva Voce needs microphone access to record your voice."
+        NSSpeechRecognitionUsageDescription: "Viva Voce uses speech recognition to transcribe your voice."
+        NSAppleEventsUsageDescription: "Viva Voce needs Apple Events access to create notes in Apple Notes."
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+          NSExceptionDomains:
+            localhost:
+              NSExceptionAllowsInsecureHTTPLoads: true
+              NSExceptionMinimumTLSVersion: TLSv1.0
+              NSIncludesSubdomains: true
+        CFBundleName: Viva Voce
+        CFBundleDisplayName: Viva Voce
+        CFBundleIdentifier: com.vivavoce.app
+        CFBundleVersion: "1"
+        CFBundleShortVersionString: "1.0.0"
+        NSHumanReadableCopyright: "Copyright © 2026 Viva Voce. All rights reserved."
+        LSMinimumSystemVersion: "13.0"
+        CFBundleIconFile: AppIcon
+    entitlements:
+      path: VivaVoce/VivaVoce.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.vivavoce.app
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_HARDENED_RUNTIME: YES
+        SWIFT_STRICT_CONCURRENCY: minimal
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
+    dependencies:
+      - package: KeyboardShortcuts
+      - package: WhisperKit
+      - package: SwiftWhisper

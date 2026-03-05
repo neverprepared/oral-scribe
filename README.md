@@ -124,6 +124,12 @@ OralScribe/
 
 ---
 
+## Credits
+
+- App icon microphone photo by [stux](https://pixabay.com/users/stux-12364/) via [Pixabay](https://pixabay.com/photos/microphone-1074362/) — [Pixabay Content License](https://pixabay.com/service/license-summary/)
+
+---
+
 ## License
 
 MIT

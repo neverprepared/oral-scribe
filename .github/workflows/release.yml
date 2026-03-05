@@ -1,0 +1,147 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+env:
+  SCHEME: OralScribe
+  BUNDLE_ID: com.oralscribe.app
+  ARCHIVE_PATH: build/OralScribe.xcarchive
+  EXPORT_PATH: build/export
+  DMG_PATH: build/OralScribe.dmg
+
+jobs:
+  release:
+    name: Build, Sign & Notarize
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      # ── Signing ──────────────────────────────────────────────────────────
+
+      - name: Import Developer ID certificate
+        env:
+          CERTIFICATE_P12: ${{ secrets.CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/signing.keychain-db
+
+          # Create a temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          echo "$CERTIFICATE_P12" | base64 --decode > $RUNNER_TEMP/certificate.p12
+          security import "$RUNNER_TEMP/certificate.p12" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$KEYCHAIN_PATH"
+
+          # Make it the default so xcodebuild picks it up
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain
+
+      # ── Archive ──────────────────────────────────────────────────────────
+
+      - name: Write ExportOptions.plist
+        run: |
+          mkdir -p build
+          cat > build/ExportOptions.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+            "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>developer-id</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>signingCertificate</key>
+            <string>Developer ID Application</string>
+            <key>teamID</key>
+            <string>${{ secrets.TEAM_ID }}</string>
+            <key>hardcodedDevelopmentTeam</key>
+            <string>${{ secrets.TEAM_ID }}</string>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: Archive
+        run: |
+          xcodebuild archive \
+            -project OralScribe.xcodeproj \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination "generic/platform=macOS" \
+            -archivePath "$ARCHIVE_PATH" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
+            DEVELOPMENT_TEAM="${{ secrets.TEAM_ID }}" \
+            PROVISIONING_PROFILE_SPECIFIER=""
+
+      - name: Export archive
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportPath "$EXPORT_PATH" \
+            -exportOptionsPlist build/ExportOptions.plist
+
+      # ── Notarization ─────────────────────────────────────────────────────
+
+      - name: Notarize
+        env:
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_KEY_ISSUER: ${{ secrets.NOTARY_KEY_ISSUER }}
+          NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
+        run: |
+          # Write the App Store Connect API key to a file
+          echo "$NOTARY_KEY_P8" > $RUNNER_TEMP/notary_key.p8
+
+          # Zip the .app for submission (notarytool requires a zip, dmg, or pkg)
+          ditto -c -k --keepParent \
+            "$EXPORT_PATH/OralScribe.app" \
+            build/OralScribe-notarize.zip
+
+          xcrun notarytool submit build/OralScribe-notarize.zip \
+            --key "$RUNNER_TEMP/notary_key.p8" \
+            --key-id "$NOTARY_KEY_ID" \
+            --issuer "$NOTARY_KEY_ISSUER" \
+            --wait
+
+      - name: Staple notarization ticket
+        run: xcrun stapler staple "$EXPORT_PATH/OralScribe.app"
+
+      # ── DMG ──────────────────────────────────────────────────────────────
+
+      - name: Create DMG
+        run: |
+          hdiutil create \
+            -volname "Oral Scribe" \
+            -srcfolder "$EXPORT_PATH/OralScribe.app" \
+            -ov \
+            -format UDZO \
+            "$DMG_PATH"
+
+      # ── Release ──────────────────────────────────────────────────────────
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.DMG_PATH }}
+          generate_release_notes: true

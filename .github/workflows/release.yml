@@ -7,7 +7,6 @@ on:
 
 env:
   SCHEME: OralScribe
-  BUNDLE_ID: com.oralscribe.app
   ARCHIVE_PATH: build/OralScribe.xcarchive
   EXPORT_PATH: build/export
   DMG_PATH: build/OralScribe.dmg
@@ -31,30 +30,27 @@ jobs:
 
       - name: Import Developer ID certificate
         env:
-          CERTIFICATE_P12: ${{ secrets.CERTIFICATE_P12 }}
-          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          KEYCHAIN_PWD: ${{ secrets.KEYCHAIN_PWD }}
         run: |
           KEYCHAIN_PATH=$RUNNER_TEMP/signing.keychain-db
 
-          # Create a temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security create-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
 
-          # Import certificate
-          echo "$CERTIFICATE_P12" | base64 --decode > $RUNNER_TEMP/certificate.p12
+          echo "$MACOS_CERTIFICATE" | base64 --decode > $RUNNER_TEMP/certificate.p12
           security import "$RUNNER_TEMP/certificate.p12" \
             -k "$KEYCHAIN_PATH" \
-            -P "$CERTIFICATE_PASSWORD" \
+            -P "$MACOS_CERTIFICATE_PWD" \
             -T /usr/bin/codesign
           security set-key-partition-list \
             -S apple-tool:,apple: \
             -s \
-            -k "$KEYCHAIN_PASSWORD" \
+            -k "$KEYCHAIN_PWD" \
             "$KEYCHAIN_PATH"
 
-          # Make it the default so xcodebuild picks it up
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain
 
       # ── Archive ──────────────────────────────────────────────────────────
@@ -62,7 +58,7 @@ jobs:
       - name: Write ExportOptions.plist
         run: |
           mkdir -p build
-          cat > build/ExportOptions.plist <<'PLIST'
+          cat > build/ExportOptions.plist <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
             "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -73,11 +69,9 @@ jobs:
             <key>signingStyle</key>
             <string>manual</string>
             <key>signingCertificate</key>
-            <string>Developer ID Application</string>
+            <string>${{ secrets.MACOS_IDENTITY }}</string>
             <key>teamID</key>
-            <string>${{ secrets.TEAM_ID }}</string>
-            <key>hardcodedDevelopmentTeam</key>
-            <string>${{ secrets.TEAM_ID }}</string>
+            <string>${{ secrets.APPLE_TEAM_ID }}</string>
           </dict>
           </plist>
           PLIST
@@ -91,8 +85,8 @@ jobs:
             -destination "generic/platform=macOS" \
             -archivePath "$ARCHIVE_PATH" \
             CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Developer ID Application" \
-            DEVELOPMENT_TEAM="${{ secrets.TEAM_ID }}" \
+            CODE_SIGN_IDENTITY="${{ secrets.MACOS_IDENTITY }}" \
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
             PROVISIONING_PROFILE_SPECIFIER=""
 
       - name: Export archive
@@ -105,23 +99,15 @@ jobs:
       # ── Notarization ─────────────────────────────────────────────────────
 
       - name: Notarize
-        env:
-          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
-          NOTARY_KEY_ISSUER: ${{ secrets.NOTARY_KEY_ISSUER }}
-          NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
         run: |
-          # Write the App Store Connect API key to a file
-          echo "$NOTARY_KEY_P8" > $RUNNER_TEMP/notary_key.p8
-
-          # Zip the .app for submission (notarytool requires a zip, dmg, or pkg)
           ditto -c -k --keepParent \
             "$EXPORT_PATH/OralScribe.app" \
             build/OralScribe-notarize.zip
 
           xcrun notarytool submit build/OralScribe-notarize.zip \
-            --key "$RUNNER_TEMP/notary_key.p8" \
-            --key-id "$NOTARY_KEY_ID" \
-            --issuer "$NOTARY_KEY_ISSUER" \
+            --apple-id "${{ secrets.APPLE_ID }}" \
+            --password "${{ secrets.APPLE_APP_PASSWORD }}" \
+            --team-id "${{ secrets.APPLE_TEAM_ID }}" \
             --wait
 
       - name: Staple notarization ticket

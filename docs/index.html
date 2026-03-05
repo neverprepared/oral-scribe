@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oral Scribe — Menu Bar Dictation for macOS</title>
+  <meta name="description" content="Press a hotkey, speak, and your transcribed text is delivered wherever you need it. A free, open-source macOS dictation app." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0f;
+      --surface:   #18181b;
+      --border:    #2a2a2e;
+      --accent:    #e84d4d;
+      --text:      #e8e8ea;
+      --muted:     #8a8a95;
+      --code-bg:   #111114;
+      --radius:    12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    section { padding: 64px 0; }
+    section + section { border-top: 1px solid var(--border); }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 96px 0 64px;
+    }
+
+    .hero .icon {
+      width: 96px;
+      height: 96px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      margin-bottom: 28px;
+    }
+
+    .hero h1 {
+      font-size: 2.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+    }
+
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--muted);
+      max-width: 520px;
+      margin: 0 auto 36px;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 22px;
+      border-radius: var(--radius);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: 0.85; text-decoration: none; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    /* ── Section headings ── */
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 24px;
+    }
+
+    /* ── Install ── */
+    .install-steps { display: flex; flex-direction: column; gap: 16px; }
+
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+    }
+
+    .step-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-family: "SF Mono", ui-monospace, monospace;
+      font-size: 0.88rem;
+      color: #c9d1d9;
+      overflow-x: auto;
+      line-height: 1.7;
+    }
+
+    .step p {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-top: 10px;
+    }
+
+    /* ── Features ── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .feature-card .emoji { font-size: 1.4rem; margin-bottom: 10px; }
+    .feature-card h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 6px; }
+    .feature-card p  { font-size: 0.85rem; color: var(--muted); }
+
+    /* ── Backends ── */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 14px;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .pill-green  { background: #1a3a1a; color: #4ade80; }
+    .pill-yellow { background: #3a2e00; color: #facc15; }
+    .pill-blue   { background: #0f2340; color: #60a5fa; }
+
+    /* ── Requirements ── */
+    .req-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .req-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.93rem;
+      color: var(--muted);
+    }
+    .req-list li::before {
+      content: "›";
+      color: var(--accent);
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .req-list strong { color: var(--text); }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 0;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="container">
+      <div class="icon">🎙</div>
+      <h1>Oral Scribe</h1>
+      <p>Press a hotkey, speak, and your transcribed text lands wherever you need it — the active text field, clipboard, Apple Notes, or a file.</p>
+      <div class="badge-row">
+        <span class="badge">macOS 13+</span>
+        <span class="badge">Swift 5.9</span>
+        <span class="badge">Open Source</span>
+        <span class="badge">Free</span>
+      </div>
+      <div class="btn-row">
+        <a class="btn btn-primary" href="https://github.com/neverprepared/oral-scribe/releases/latest">
+          ↓ Download
+        </a>
+        <a class="btn btn-secondary" href="https://github.com/neverprepared/oral-scribe">
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Install -->
+  <section>
+    <div class="container">
+      <h2>Installation</h2>
+      <div class="install-steps">
+
+        <div class="step">
+          <div class="step-label">Option 1 — Homebrew (recommended)</div>
+          <pre>brew tap neverprepared/oral-scribe https://github.com/neverprepared/oral-scribe
+brew install --cask oral-scribe</pre>
+          <p>Updates automatically when you run <code>brew upgrade</code>.</p>
+        </div>
+
+        <div class="step">
+          <div class="step-label">Option 2 — Manual</div>
+          <p>Download the latest <strong>OralScribe.dmg</strong> from <a href="https://github.com/neverprepared/oral-scribe/releases/latest">Releases</a>, open it, and drag <strong>Oral Scribe</strong> to your Applications folder.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section>
+    <div class="container">
+      <h2>Features</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="emoji">🎤</div>
+          <h3>Multiple Backends</h3>
+          <p>Apple Speech, WhisperKit, Whisper.cpp, or OpenAI Whisper — pick the right trade-off for your workflow.</p>
+        </div>
+        <div class="feature-card">
+          <div class="emoji">⌨️</div>
+          <h3>Global Hotkey</h3>
+          <p>Press once to start, once to stop. Default ⌥⇧R, fully rebindable.</p>
+        </div>
+        <div class="feature-card">
+          <div class="emoji">🤖</div>
+          <h3>LLM Post-Processing</h3>
+          <p>Clean up grammar, remove filler words, summarize, or apply a custom prompt via Ollama.</p>
+        </div>
+        <div class="feature-card">
+          <div class="emoji">📤</div>
+          <h3>Flexible Output</h3>
+          <p>Active text field, clipboard, Apple Notes, or append to a file.</p>
+        </div>
+        <div class="feature-card">
+          <div class="emoji">💊</div>
+          <h3>Floating Overlay</h3>
+          <p>A slim pill shows the recording timer and live waveform — always visible, never in the way.</p>
+        </div>
+        <div class="feature-card">
+          <div class="emoji">🕐</div>
+          <h3>Transcript History</h3>
+          <p>Every transcription is saved with timestamp and duration. Copy any entry with one click.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Backends -->
+  <section>
+    <div class="container">
+      <h2>Transcription Backends</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Backend</th>
+              <th>Speed</th>
+              <th>Accuracy</th>
+              <th>Internet</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Apple Speech</strong></td>
+              <td><span class="pill pill-green">Fast</span></td>
+              <td>Good</td>
+              <td>Optional</td>
+              <td>Live streaming, auto-stops on silence, ~60s limit</td>
+            </tr>
+            <tr>
+              <td><strong>WhisperKit</strong></td>
+              <td><span class="pill pill-yellow">Slow</span></td>
+              <td>Excellent</td>
+              <td>No</td>
+              <td>On-device, punctuated output, file-based</td>
+            </tr>
+            <tr>
+              <td><strong>Whisper.cpp</strong></td>
+              <td><span class="pill pill-green">Fast</span> – <span class="pill pill-yellow">Slow</span></td>
+              <td>Excellent</td>
+              <td>No</td>
+              <td>On-device, CoreML accelerated. Fast with Tiny/Base models; slower with larger models</td>
+            </tr>
+            <tr>
+              <td><strong>OpenAI Whisper</strong></td>
+              <td><span class="pill pill-green">Fast</span></td>
+              <td>Excellent</td>
+              <td>Yes</td>
+              <td>Requires API key</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:16px; font-size:0.88rem; color:var(--muted);">
+        All backends support optional LLM post-processing via Ollama.
+      </p>
+    </div>
+  </section>
+
+  <!-- Requirements -->
+  <section>
+    <div class="container">
+      <h2>Requirements</h2>
+      <ul class="req-list">
+        <li><span><strong>macOS 13 Ventura</strong> or later</span></li>
+        <li><span>For on-device Whisper: download a model from within the app (<strong>App → Transcription</strong>)</span></li>
+        <li><span>For LLM post-processing: <a href="https://ollama.com">Ollama</a> running locally with a model pulled — <code>ollama pull llama3.2:1b</code> is a good starting point</span></li>
+        <li><span>For text injection into active fields: <strong>Accessibility</strong> permission (prompted on first use)</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>
+        <a href="https://github.com/neverprepared/oral-scribe">GitHub</a> &nbsp;·&nbsp;
+        <a href="https://github.com/neverprepared/oral-scribe/releases">Releases</a> &nbsp;·&nbsp;
+        <a href="https://github.com/neverprepared/oral-scribe/blob/main/LICENSE">MIT License</a>
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>

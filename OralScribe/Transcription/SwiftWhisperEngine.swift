@@ -69,8 +69,12 @@ class SwiftWhisperEngine: TranscriptionEngine {
         "transcribed by",
         "subtitles by",
         "captions by",
+        "thank you very much",
+        "thank you so much",
         "thank you\\.?$",
         "thanks\\.?$",
+        "let's go",
+        "let's go\\!?$",
     ]
 
     private static func removeTrailingHallucinations(_ text: String) -> String {

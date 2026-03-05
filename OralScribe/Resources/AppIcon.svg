@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Oral Scribe App Icon
+  Microphone icon: Phosphor Icons "microphone-duotone" (MIT License)
+  https://github.com/phosphor-icons/core
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- Soft red glow behind the capsule -->
+    <radialGradient id="glow" cx="50%" cy="41.6%" r="28%">
+      <stop offset="0%"   stop-color="#e84d4d" stop-opacity="0.32"/>
+      <stop offset="100%" stop-color="#e84d4d" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background: macOS Big Sur–style rounded square -->
+  <rect width="1024" height="1024" rx="224" fill="#18181b"/>
+
+  <!-- Ambient red glow centered on the mic capsule -->
+  <ellipse cx="512" cy="426" rx="260" ry="248" fill="url(#glow)"/>
+
+  <!--
+    Phosphor Icons microphone-duotone, scaled to fill ~600px and centered.
+    Original viewBox: 0 0 256 256
+    Mic bounds: x 48–208 (w=160), y 16–240 (h=224)
+    Scale: 2.68  Translate: (169, 169)
+  -->
+  <g transform="translate(169, 169) scale(2.68)">
+
+    <!-- Duotone layer: inner capsule fill (gives depth to the grille body) -->
+    <path fill="white" opacity="0.45"
+      d="M168,64v64a40,40,0,0,1-40,40h0a40,40,0,0,1-40-40V64a40,40,0,0,1,40-40h0A40,40,0,0,1,168,64Z"/>
+
+    <!-- Main mic: outer capsule + inner grille ring + curved stand arm + pole + base -->
+    <path fill="white"
+      d="M128,176a48.05,48.05,0,0,0,48-48V64a48,48,0,0,0-96,0v64A48.05,48.05,0,0,0,128,176ZM96,64a32,32,0,0,1,64,0v64a32,32,0,0,1-64,0Zm40,143.6V240a8,8,0,0,1-16,0V207.6A80.11,80.11,0,0,1,48,128a8,8,0,0,1,16,0,64,64,0,0,0,128,0,8,8,0,0,1,16,0A80.11,80.11,0,0,1,136,207.6Z"/>
+
+  </g>
+</svg>

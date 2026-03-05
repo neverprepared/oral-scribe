@@ -33,6 +33,21 @@ For LLM post-processing:
 
 ---
 
+## Installation
+
+### Homebrew (recommended)
+
+```bash
+brew tap neverprepared/oral-scribe https://github.com/neverprepared/oral-scribe
+brew install --cask oral-scribe
+```
+
+### Manual
+
+Download the latest `OralScribe.dmg` from [Releases](https://github.com/neverprepared/oral-scribe/releases), open it, and drag **Oral Scribe** to your Applications folder.
+
+---
+
 ## Building
 
 ```bash

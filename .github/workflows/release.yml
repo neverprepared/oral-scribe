@@ -15,10 +15,14 @@ jobs:
   release:
     name: Build, Sign & Notarize
     runs-on: macos-15
+    permissions:
+      contents: write  # create release + push cask update
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: main  # need full branch history for the cask commit push
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -123,6 +127,22 @@ jobs:
             -ov \
             -format UDZO \
             "$DMG_PATH"
+
+      # ── Cask update ──────────────────────────────────────────────────────
+
+      - name: Update Homebrew cask sha256
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          SHA=$(shasum -a 256 "$DMG_PATH" | awk '{print $1}')
+          sed -i '' \
+            -e "s/version \".*\"/version \"$VERSION\"/" \
+            -e "s/sha256 .*/sha256 \"$SHA\"/" \
+            Casks/oral-scribe.rb
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Casks/oral-scribe.rb
+          git commit -m "chore: update cask to v$VERSION"
+          git push origin HEAD:main
 
       # ── Release ──────────────────────────────────────────────────────────
 

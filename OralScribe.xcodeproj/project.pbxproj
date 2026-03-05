@@ -17,6 +17,7 @@
 		44DD6AFD250767A9A90A1CC6 /* AudioFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD0D435BAB94FAB4026D2DEE /* AudioFormat.swift */; };
 		4955DC64BEAE9C2BF608E98C /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 87AF63CBD4EFA47230636DB6 /* WhisperKit */; };
 		53968DA9867A912FA8EF59E0 /* RecordingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 289F7267B1587CD0CC62AE53 /* RecordingCoordinator.swift */; };
+		5B2A35FE0EDF114A780A2D2D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F3D16106AE495E09C44B39FC /* Assets.xcassets */; };
 		62B776F2D37119F88B723449 /* TranslationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27231FF45F82B3B49B6F4573 /* TranslationManager.swift */; };
 		67741DDEB00B28769A4C6128 /* AccessibilityOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96BD26EB3D5356C4C97C5DC5 /* AccessibilityOutput.swift */; };
 		69285B254D0E78F58C641903 /* LLMProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7C447F6C62931B31A1FC5B8 /* LLMProcessor.swift */; };
@@ -71,6 +72,7 @@
 		EE4906496E51BB6B1A6BF7B3 /* SettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
 		F05A6AF1139903127484EAC3 /* TranscriptionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionEngine.swift; sourceTree = "<group>"; };
 		F2213B99ED9A3920A305129E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		F3D16106AE495E09C44B39FC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F5812A78D0D994513C13B610 /* AppContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContentView.swift; sourceTree = "<group>"; };
 		FA3CE0B4A09E44B556F0AC97 /* MenuBarPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopoverView.swift; sourceTree = "<group>"; };
 		FC58238756D88A12666A059D /* WhisperKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperKitManager.swift; sourceTree = "<group>"; };
@@ -193,6 +195,7 @@
 		9A3127C9EC2C2C5C60675C51 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				F3D16106AE495E09C44B39FC /* Assets.xcassets */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -248,6 +251,7 @@
 			buildConfigurationList = B1E6BF7C84BF7042F43A8956 /* Build configuration list for PBXNativeTarget "OralScribe" */;
 			buildPhases = (
 				4BFCFD44A727F16A057C2979 /* Sources */,
+				C31720D37A236D310E54ECEA /* Resources */,
 				D13E3D9F5BA5B5A28C76E711 /* Frameworks */,
 			);
 			buildRules = (
@@ -301,6 +305,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C31720D37A236D310E54ECEA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5B2A35FE0EDF114A780A2D2D /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		4BFCFD44A727F16A057C2979 /* Sources */ = {

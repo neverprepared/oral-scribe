@@ -102,20 +102,24 @@ jobs:
 
       - name: Re-sign with entitlements
         run: |
-          echo "=== Entitlements file contents ==="
+          echo "=== Entitlements file ==="
           cat OralScribe/OralScribe.entitlements
-          echo ""
-          echo "=== Re-signing ==="
           codesign --force --options runtime \
             --entitlements OralScribe/OralScribe.entitlements \
             --sign "${{ secrets.MACOS_IDENTITY }}" \
             "$EXPORT_PATH/OralScribe.app"
-          echo ""
-          echo "=== Embedded entitlements after re-sign ==="
-          codesign -d --entitlements :- "$EXPORT_PATH/OralScribe.app"
-          echo ""
-          echo "=== Signature verification ==="
           codesign --verify --deep --strict "$EXPORT_PATH/OralScribe.app"
+
+      - name: Verify entitlements embedded
+        run: |
+          ENTITLEMENTS=$(codesign -d --entitlements :- "$EXPORT_PATH/OralScribe.app" 2>&1)
+          echo "$ENTITLEMENTS"
+          if echo "$ENTITLEMENTS" | grep -q "audio-input"; then
+            echo "Entitlements OK"
+          else
+            echo "ERROR: Entitlements not embedded!"
+            exit 1
+          fi
 
       # ── Notarization ─────────────────────────────────────────────────────
 

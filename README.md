@@ -80,8 +80,10 @@ On first launch (and after every ad-hoc rebuild), grant:
 |---|---|---|---|---|
 | Apple Speech | Fast | Good | Optional | Live streaming, auto-stops on silence, ~60s limit |
 | WhisperKit | Slow | Excellent | No | On-device, punctuated output, file-based |
-| Whisper.cpp | Slow | Excellent | No | On-device, CoreML accelerated, file-based |
+| Whisper.cpp | Fast – Slow | Excellent | No | On-device, CoreML accelerated, file-based. Fast with Tiny/Base models; slower with larger models |
 | OpenAI Whisper | Fast | Excellent | Yes | Requires API key |
+
+All backends support optional **LLM post-processing** via [Ollama](https://ollama.com) — clean up grammar, remove filler words, summarize, or apply a custom prompt (App window → **Processing**).
 
 ---
 

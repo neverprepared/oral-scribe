@@ -56,7 +56,7 @@ class SwiftWhisperEngine: TranscriptionEngine {
 
     // Whisper is trained on YouTube/podcast audio that ends with common sign-offs.
     // Strip these phrases when they appear as trailing sentences in the output.
-    private static let trailingHallucinationPatterns: [String] = [
+    static let trailingHallucinationPatterns: [String] = [
         "thank you for watching",
         "thanks for watching",
         "thank you for listening",
@@ -78,7 +78,7 @@ class SwiftWhisperEngine: TranscriptionEngine {
     ]
 
     // Pre-compiled (plain, regex) pairs — avoids recompiling on every transcription.
-    private static let compiledPatterns: [(plain: String, regex: NSRegularExpression?)] =
+    static let compiledPatterns: [(plain: String, regex: NSRegularExpression?)] =
         trailingHallucinationPatterns.map { pattern in
             let plain = pattern
                 .replacingOccurrences(of: "\\.\\?\\$", with: "", options: .regularExpression)
@@ -86,7 +86,7 @@ class SwiftWhisperEngine: TranscriptionEngine {
             return (plain: plain, regex: regex)
         }
 
-    private static func removeTrailingHallucinations(_ text: String) -> String {
+    static func removeTrailingHallucinations(_ text: String) -> String {
         // Split into sentences, remove trailing ones that are pure hallucinations
         var sentences = text.components(separatedBy: .init(charactersIn: ".!?"))
             .map { $0.trimmingCharacters(in: .whitespaces) }

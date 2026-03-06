@@ -85,7 +85,7 @@ class OllamaProcessor: LLMProcessor {
     }
 
     /// Strip common LLM preamble from the response as a safety net.
-    private func stripPreamble(_ text: String) -> String {
+    func stripPreamble(_ text: String) -> String {
         let lowered = text.lowercased()
         // Match "Here is/Here's the <anything>:" on the first line
         if let colonRange = lowered.range(of: ":"),

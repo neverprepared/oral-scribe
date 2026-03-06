@@ -16,10 +16,13 @@ enum HistoryStore {
 
     // MARK: - Constants
 
-    private static let encryptedKey  = "transcriptHistoryEncrypted"
-    private static let plaintextKey  = "transcriptHistory"          // legacy / migration
+    private static let encryptedKey    = "transcriptHistoryEncrypted"
+    private static let plaintextKey    = "transcriptHistory"          // legacy / migration
     private static let keychainService = "com.oralscribe.app"
     private static let keychainAccount = "history-encryption-key"
+
+    /// Injectable UserDefaults — override in tests to avoid polluting user preferences.
+    static var defaults: UserDefaults = .standard
 
     // MARK: - Public API
 
@@ -30,21 +33,21 @@ enum HistoryStore {
         }
 
         // Encrypted path (normal)
-        if let blob = UserDefaults.standard.data(forKey: encryptedKey) {
+        if let blob = defaults.data(forKey: encryptedKey) {
             if let entries = decrypt(blob, using: key) {
                 return entries
             }
             // Corrupted blob — clear and start fresh
             print("OralScribe: HistoryStore decryption failed, clearing history")
-            UserDefaults.standard.removeObject(forKey: encryptedKey)
+            defaults.removeObject(forKey: encryptedKey)
             return []
         }
 
         // Migration: plaintext data from a previous build
-        if let plainData = UserDefaults.standard.data(forKey: plaintextKey),
+        if let plainData = defaults.data(forKey: plaintextKey),
            let entries = try? JSONDecoder().decode([TranscriptEntry].self, from: plainData) {
             save(entries)
-            UserDefaults.standard.removeObject(forKey: plaintextKey)
+            defaults.removeObject(forKey: plaintextKey)
             return entries
         }
 
@@ -58,22 +61,22 @@ enum HistoryStore {
             print("OralScribe: HistoryStore could not encrypt history")
             return
         }
-        UserDefaults.standard.set(blob, forKey: encryptedKey)
+        defaults.set(blob, forKey: encryptedKey)
     }
 
     static func clear() {
-        UserDefaults.standard.removeObject(forKey: encryptedKey)
-        UserDefaults.standard.removeObject(forKey: plaintextKey)
+        defaults.removeObject(forKey: encryptedKey)
+        defaults.removeObject(forKey: plaintextKey)
     }
 
-    // MARK: - Encryption / Decryption
+    // MARK: - Encryption / Decryption (internal for testability)
 
-    private static func encrypt(_ data: Data, using key: SymmetricKey) -> Data? {
+    static func encrypt(_ data: Data, using key: SymmetricKey) -> Data? {
         guard let box = try? AES.GCM.seal(data, using: key) else { return nil }
         return box.combined   // 12-byte nonce ‖ ciphertext ‖ 16-byte tag
     }
 
-    private static func decrypt(_ data: Data, using key: SymmetricKey) -> [TranscriptEntry]? {
+    static func decrypt(_ data: Data, using key: SymmetricKey) -> [TranscriptEntry]? {
         guard let box       = try? AES.GCM.SealedBox(combined: data),
               let plainData = try? AES.GCM.open(box, using: key),
               let entries   = try? JSONDecoder().decode([TranscriptEntry].self, from: plainData)

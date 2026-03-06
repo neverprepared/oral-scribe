@@ -72,3 +72,18 @@ targets:
       - package: KeyboardShortcuts
       - package: WhisperKit
       - package: SwiftWhisper
+
+  OralScribeTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: OralScribeTests
+    dependencies:
+      - target: OralScribe
+    settings:
+      base:
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        ENABLE_HARDENED_RUNTIME: NO
+        GENERATE_INFOPLIST_FILE: YES

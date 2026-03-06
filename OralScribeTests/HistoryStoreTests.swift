@@ -8,16 +8,18 @@ final class HistoryStoreTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        // Point HistoryStore at an isolated UserDefaults suite
+        // Point HistoryStore at an isolated UserDefaults suite and in-memory Keychain
         let suite = UserDefaults(suiteName: Self.testSuiteName)!
         suite.removePersistentDomain(forName: Self.testSuiteName)
         HistoryStore.defaults = suite
+        HistoryStore.keychain = InMemoryKeychain()
     }
 
     override func tearDown() {
         HistoryStore.clear()
         HistoryStore.defaults.removePersistentDomain(forName: Self.testSuiteName)
         HistoryStore.defaults = .standard
+        HistoryStore.keychain = DefaultKeychainStore()
         super.tearDown()
     }
 
@@ -198,5 +200,18 @@ final class HistoryStoreTests: XCTestCase {
 
         XCTAssertEqual(secondLoad.count, 1)
         XCTAssertEqual(secondLoad.first?.text, "Migrate me")
+    }
+}
+
+// MARK: - Test Helpers
+
+final class InMemoryKeychain: KeychainStore {
+    private var storedKey: SymmetricKey?
+
+    func read() -> SymmetricKey? { storedKey }
+
+    func write(_ key: SymmetricKey) -> Bool {
+        storedKey = key
+        return true
     }
 }

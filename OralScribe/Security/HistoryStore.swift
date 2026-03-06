@@ -2,6 +2,48 @@ import Foundation
 import CryptoKit
 import Security
 
+// MARK: - Keychain Abstraction
+
+protocol KeychainStore {
+    func read() -> SymmetricKey?
+    func write(_ key: SymmetricKey) -> Bool
+}
+
+struct DefaultKeychainStore: KeychainStore {
+    private let service = "com.oralscribe.app"
+    private let account = "history-encryption-key"
+
+    func read() -> SymmetricKey? {
+        let query: [String: Any] = [
+            kSecClass       as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecReturnData  as String: true,
+            kSecMatchLimit  as String: kSecMatchLimitOne
+        ]
+        var item: AnyObject?
+        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
+              let data = item as? Data else { return nil }
+        return SymmetricKey(data: data)
+    }
+
+    func write(_ key: SymmetricKey) -> Bool {
+        let keyData = key.withUnsafeBytes { Data($0) }
+        let attrs: [String: Any] = [
+            kSecClass          as String: kSecClassGenericPassword,
+            kSecAttrService    as String: service,
+            kSecAttrAccount    as String: account,
+            kSecValueData      as String: keyData,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
+        ]
+        let status = SecItemAdd(attrs as CFDictionary, nil)
+        if status != errSecSuccess {
+            print("OralScribe: HistoryStore failed to store key in Keychain (\(status))")
+        }
+        return status == errSecSuccess
+    }
+}
+
 // MARK: - History Store
 //
 // Persists transcript history as AES-256-GCM encrypted data in UserDefaults.
@@ -16,13 +58,14 @@ enum HistoryStore {
 
     // MARK: - Constants
 
-    private static let encryptedKey    = "transcriptHistoryEncrypted"
-    private static let plaintextKey    = "transcriptHistory"          // legacy / migration
-    private static let keychainService = "com.oralscribe.app"
-    private static let keychainAccount = "history-encryption-key"
+    private static let encryptedKey = "transcriptHistoryEncrypted"
+    private static let plaintextKey = "transcriptHistory"   // legacy / migration
 
     /// Injectable UserDefaults — override in tests to avoid polluting user preferences.
     static var defaults: UserDefaults = .standard
+
+    /// Injectable Keychain — override in tests to avoid real Keychain access.
+    static var keychain: any KeychainStore = DefaultKeychainStore()
 
     // MARK: - Public API
 
@@ -87,38 +130,8 @@ enum HistoryStore {
     // MARK: - Keychain Key Management
 
     private static func loadOrCreateKey() -> SymmetricKey? {
-        if let key = readKey() { return key }
+        if let key = keychain.read() { return key }
         let newKey = SymmetricKey(size: .bits256)
-        return writeKey(newKey) ? newKey : nil
-    }
-
-    private static func readKey() -> SymmetricKey? {
-        let query: [String: Any] = [
-            kSecClass       as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: keychainAccount,
-            kSecReturnData  as String: true,
-            kSecMatchLimit  as String: kSecMatchLimitOne
-        ]
-        var item: AnyObject?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data else { return nil }
-        return SymmetricKey(data: data)
-    }
-
-    private static func writeKey(_ key: SymmetricKey) -> Bool {
-        let keyData = key.withUnsafeBytes { Data($0) }
-        let attrs: [String: Any] = [
-            kSecClass            as String: kSecClassGenericPassword,
-            kSecAttrService      as String: keychainService,
-            kSecAttrAccount      as String: keychainAccount,
-            kSecValueData        as String: keyData,
-            kSecAttrAccessible   as String: kSecAttrAccessibleAfterFirstUnlock
-        ]
-        let status = SecItemAdd(attrs as CFDictionary, nil)
-        if status != errSecSuccess {
-            print("OralScribe: HistoryStore failed to store key in Keychain (\(status))")
-        }
-        return status == errSecSuccess
+        return keychain.write(newKey) ? newKey : nil
     }
 }

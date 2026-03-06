@@ -10,7 +10,7 @@ struct AccessibilityOutput {
         // even when TCC has granted the permission. Just attempt the calls directly.
 
         guard let targetApp else {
-            pasteFromClipboard(activating: nil)
+            pasteFromClipboard(text, activating: nil)
             return
         }
 
@@ -25,7 +25,7 @@ struct AccessibilityOutput {
         }
 
         // Fallback: activate the target app and send Cmd+V to the global HID tap.
-        pasteFromClipboard(activating: targetApp)
+        pasteFromClipboard(text, activating: targetApp)
     }
 
     // MARK: - AXUIElement insert at cursor
@@ -60,7 +60,12 @@ struct AccessibilityOutput {
 
     // MARK: - Activate + Cmd+V
 
-    private static func pasteFromClipboard(activating targetApp: NSRunningApplication?) {
+    private static func pasteFromClipboard(_ text: String, activating targetApp: NSRunningApplication?) {
+        // Write text to clipboard now — required for Cmd+V to paste the transcript
+        // regardless of whether the user has "Output to Clipboard" enabled.
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+
         if let targetApp {
             targetApp.activate(options: .activateIgnoringOtherApps)
         }

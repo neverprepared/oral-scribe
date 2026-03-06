@@ -27,6 +27,7 @@
 		83407BB1F44182A3DB9F80DA /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = A970485DA2BF7606EC4CF945 /* KeyboardShortcuts */; };
 		84D6B6E940822AB025AA6B01 /* OllamaProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F066E82C4FF88B0454BBD66 /* OllamaProcessor.swift */; };
 		85C7E42469753EDEB2203F52 /* TranscriptionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F05A6AF1139903127484EAC3 /* TranscriptionEngine.swift */; };
+		8B015BEA3F92AB601F98E1E4 /* KeywordDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD5358CAAFA7EC36DDB80E99 /* KeywordDetector.swift */; };
 		8CF22D0CAEC71D862F23FD2D /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1696561040668EFCDC8050AC /* HotkeyManager.swift */; };
 		92AF22939E5074B3D24DB065 /* AppContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5812A78D0D994513C13B610 /* AppContentView.swift */; };
 		96EEB1B7FA2D7EABCABACFDE /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C846DDEDBF60A6C42A910C2B /* AppSettings.swift */; };
@@ -76,6 +77,7 @@
 		F5812A78D0D994513C13B610 /* AppContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContentView.swift; sourceTree = "<group>"; };
 		FA3CE0B4A09E44B556F0AC97 /* MenuBarPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopoverView.swift; sourceTree = "<group>"; };
 		FC58238756D88A12666A059D /* WhisperKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperKitManager.swift; sourceTree = "<group>"; };
+		FD5358CAAFA7EC36DDB80E99 /* KeywordDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeywordDetector.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -138,6 +140,14 @@
 			path = Translation;
 			sourceTree = "<group>";
 		};
+		422D19C5940847408BFBFC11 /* WakeWord */ = {
+			isa = PBXGroup;
+			children = (
+				FD5358CAAFA7EC36DDB80E99 /* KeywordDetector.swift */,
+			);
+			path = WakeWord;
+			sourceTree = "<group>";
+		};
 		42725AC7484571C122CDC6A4 /* OralScribe */ = {
 			isa = PBXGroup;
 			children = (
@@ -154,6 +164,7 @@
 				D3B12E803F28A9CA5443CE77 /* Transcription */,
 				4054BE3868C6B463B88B468F /* Translation */,
 				D61BFBB8E68564BC17B3DFAE /* UI */,
+				422D19C5940847408BFBFC11 /* WakeWord */,
 			);
 			path = OralScribe;
 			sourceTree = "<group>";
@@ -334,6 +345,7 @@
 				9FCF57A5D3F204EA97E2A57E /* EnginePickerView.swift in Sources */,
 				8CF22D0CAEC71D862F23FD2D /* HotkeyManager.swift in Sources */,
 				37E8379EE033DA6014929267 /* HotkeyRecorderView.swift in Sources */,
+				8B015BEA3F92AB601F98E1E4 /* KeywordDetector.swift in Sources */,
 				69285B254D0E78F58C641903 /* LLMProcessor.swift in Sources */,
 				0CBD30A797080CAE1CD0FE5A /* MenuBarPopoverView.swift in Sources */,
 				787517F3C918A34E888E1226 /* NotesOutput.swift in Sources */,

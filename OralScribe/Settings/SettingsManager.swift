@@ -105,6 +105,17 @@ class SettingsManager: ObservableObject {
         didSet { UserDefaults.standard.set(translationTargetLanguage, forKey: Keys.translationTargetLanguage) }
     }
 
+    // Voice Trigger
+    @Published var voiceTriggerEnabled: Bool {
+        didSet { UserDefaults.standard.set(voiceTriggerEnabled, forKey: Keys.voiceTriggerEnabled) }
+    }
+    @Published var deliverPhrase: String {
+        didSet { UserDefaults.standard.set(deliverPhrase, forKey: Keys.deliverPhrase) }
+    }
+    @Published var stopPhrase: String {
+        didSet { UserDefaults.standard.set(stopPhrase, forKey: Keys.stopPhrase) }
+    }
+
     // Output
     @Published var outputToClipboard: Bool {
         didSet { UserDefaults.standard.set(outputToClipboard, forKey: Keys.outputToClipboard) }
@@ -138,6 +149,9 @@ class SettingsManager: ObservableObject {
         static let customPrompt = "customPrompt"
         static let translationEnabled = "translationEnabled"
         static let translationTargetLanguage = "translationTargetLanguage"
+        static let voiceTriggerEnabled = "voiceTriggerEnabled"
+        static let deliverPhrase = "deliverPhrase"
+        static let stopPhrase = "stopPhrase"
         static let outputToClipboard = "outputToClipboard"
         static let outputToActiveField = "outputToActiveField"
         static let outputToAppleNotes = "outputToAppleNotes"
@@ -171,6 +185,10 @@ class SettingsManager: ObservableObject {
 
         translationEnabled = defaults.bool(forKey: Keys.translationEnabled)
         translationTargetLanguage = defaults.string(forKey: Keys.translationTargetLanguage) ?? "en"
+
+        voiceTriggerEnabled = defaults.bool(forKey: Keys.voiceTriggerEnabled)
+        deliverPhrase = defaults.string(forKey: Keys.deliverPhrase) ?? "deliver"
+        stopPhrase = defaults.string(forKey: Keys.stopPhrase) ?? "stop listening"
 
         outputToClipboard = defaults.object(forKey: Keys.outputToClipboard) as? Bool ?? true
         outputToActiveField = defaults.object(forKey: Keys.outputToActiveField) as? Bool ?? true

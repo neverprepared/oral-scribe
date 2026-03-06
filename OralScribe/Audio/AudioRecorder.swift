@@ -54,6 +54,13 @@ class AudioRecorder: ObservableObject {
         bufferCallback?(buffer, time)
     }
 
+    // MARK: - Buffer Callback
+
+    /// Replace the live buffer callback (e.g. when AppleSpeechEngine restarts recognition).
+    func setBufferCallback(_ handler: @escaping (AVAudioPCMBuffer, AVAudioTime) -> Void) {
+        bufferCallback = handler
+    }
+
     // MARK: - Stop
 
     func stopRecording() {

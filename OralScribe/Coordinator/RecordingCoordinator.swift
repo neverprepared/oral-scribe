@@ -39,6 +39,11 @@ class RecordingCoordinator: ObservableObject {
     private var recordingTimer: Timer?
     private var recordingStartTime: Date?
 
+    // Voice trigger
+    private var keywordDetector: KeywordDetector?
+    /// Tracks the last partial text we already scanned for keywords, to avoid re-triggering.
+    private var lastDeliveredPartialLength: Int = 0
+
     private static let historyKey = "transcriptHistory"
     private static let maxHistoryCount = 50
 
@@ -77,6 +82,7 @@ class RecordingCoordinator: ObservableObject {
         state = .recording
         liveTranscript = ""
         finalTranscript = ""
+        lastDeliveredPartialLength = 0
 
         startRecordingTimer()
         NSSound(named: .init("Tink"))?.play()
@@ -109,26 +115,74 @@ class RecordingCoordinator: ObservableObject {
 
         liveStreamTask = Task {
             do {
-                let stream = try await appleSpeechEngine.transcribeLive(recorder: audioRecorder)
-                for try await partial in stream {
-                    if Task.isCancelled { break }
-                    liveTranscript = partial
-                }
-                // Stream ended naturally (Apple Speech sent isFinal after silence).
-                // Auto-trigger the pipeline — don't wait for a second hotkey press.
-                if !Task.isCancelled && state == .recording {
-                    audioRecorder.stopRecording()
-                    let transcript = liveTranscript
-                    if !transcript.isEmpty {
-                        await runPostProcessingPipeline(transcript: transcript)
-                    } else {
-                        state = .idle
-                    }
-                }
+                var stream = try await appleSpeechEngine.transcribeLive(recorder: audioRecorder)
+                try await consumeAppleSpeechStream(&stream)
             } catch {
                 if !Task.isCancelled {
                     state = .error(message: error.localizedDescription)
                 }
+            }
+        }
+    }
+
+    /// Iterates an Apple Speech stream, handling voice-trigger keywords and isFinal restarts.
+    private func consumeAppleSpeechStream(_ stream: inout AsyncThrowingStream<String, Error>) async throws {
+        for try await partial in stream {
+            if Task.isCancelled { return }
+            liveTranscript = partial
+
+            // Voice trigger keyword scanning
+            if settings.voiceTriggerEnabled {
+                let lowered = partial.lowercased()
+
+                // Check stop phrase first (more specific)
+                if lowered.hasSuffix(settings.stopPhrase.lowercased()) {
+                    let cleaned = stripPhrase(settings.stopPhrase, from: partial)
+                    appleSpeechEngine.stopLiveTranscription()
+                    audioRecorder.stopRecording()
+                    stopRecordingTimer()
+                    if !cleaned.isEmpty {
+                        await deliverAndContinue(transcript: cleaned)
+                    }
+                    state = .idle
+                    liveTranscript = ""
+                    return
+                }
+
+                // Check deliver phrase
+                if lowered.hasSuffix(settings.deliverPhrase.lowercased()) {
+                    let cleaned = stripPhrase(settings.deliverPhrase, from: partial)
+                    if !cleaned.isEmpty {
+                        await deliverAndContinue(transcript: cleaned)
+                    }
+                    // Restart recognition to continue listening
+                    liveTranscript = ""
+                    lastDeliveredPartialLength = 0
+                    var newStream = appleSpeechEngine.restartRecognition(recorder: audioRecorder)
+                    try await consumeAppleSpeechStream(&newStream)
+                    return
+                }
+            }
+        }
+
+        // Stream ended naturally (isFinal after silence)
+        if Task.isCancelled { return }
+
+        if settings.voiceTriggerEnabled && state == .recording {
+            // In voice trigger mode: restart recognizer instead of auto-triggering pipeline
+            liveTranscript = ""
+            lastDeliveredPartialLength = 0
+            var newStream = appleSpeechEngine.restartRecognition(recorder: audioRecorder)
+            try await consumeAppleSpeechStream(&newStream)
+        } else if state == .recording {
+            // Normal mode: auto-trigger pipeline on silence
+            audioRecorder.stopRecording()
+            stopRecordingTimer()
+            let transcript = liveTranscript
+            if !transcript.isEmpty {
+                await runPostProcessingPipeline(transcript: transcript)
+            } else {
+                state = .idle
             }
         }
     }
@@ -142,6 +196,109 @@ class RecordingCoordinator: ObservableObject {
             }
         } catch {
             state = .error(message: "Failed to start recording: \(error.localizedDescription)")
+            return
+        }
+
+        // Start keyword detector for voice trigger mode
+        if settings.voiceTriggerEnabled {
+            let detector = KeywordDetector()
+            keywordDetector = detector
+            detector.start(
+                deliverPhrase: settings.deliverPhrase,
+                stopPhrase: settings.stopPhrase,
+                onDeliver: { [weak self] in
+                    Task { @MainActor in
+                        self?.handleFileBasedDeliver()
+                    }
+                },
+                onStop: { [weak self] in
+                    Task { @MainActor in
+                        self?.handleFileBasedStop()
+                    }
+                }
+            )
+        }
+    }
+
+    /// Voice trigger: deliver current file-based recording segment and restart.
+    private func handleFileBasedDeliver() {
+        guard state == .recording else { return }
+
+        // Pause keyword detector while we process
+        keywordDetector?.pause()
+        audioRecorder.stopRecording()
+
+        Task {
+            do {
+                let wavURL = try audioRecorder.exportToWAV()
+                defer { try? FileManager.default.removeItem(at: wavURL) }
+
+                let result = try await transcribeFileBasedWAV(at: wavURL)
+                let cleaned = stripPhrase(settings.deliverPhrase, from: result.text)
+                if !cleaned.isEmpty {
+                    await deliverAndContinue(transcript: cleaned)
+                }
+
+                // Restart recording
+                state = .recording
+                try audioRecorder.startRecording { _, _ in }
+                keywordDetector?.resume()
+            } catch {
+                state = .error(message: error.localizedDescription)
+                keywordDetector?.stop()
+                keywordDetector = nil
+            }
+        }
+    }
+
+    /// Voice trigger: deliver final file-based segment and end session.
+    private func handleFileBasedStop() {
+        guard state == .recording else { return }
+
+        keywordDetector?.stop()
+        keywordDetector = nil
+        audioRecorder.stopRecording()
+        stopRecordingTimer()
+
+        Task {
+            do {
+                let wavURL = try audioRecorder.exportToWAV()
+                defer { try? FileManager.default.removeItem(at: wavURL) }
+
+                let result = try await transcribeFileBasedWAV(at: wavURL)
+                let cleaned = stripPhrase(settings.stopPhrase, from: result.text)
+                if !cleaned.isEmpty {
+                    await runPostProcessingPipeline(transcript: cleaned)
+                } else {
+                    state = .idle
+                }
+            } catch {
+                state = .error(message: error.localizedDescription)
+            }
+        }
+    }
+
+    /// Shared helper to transcribe a WAV file with the current file-based backend.
+    private func transcribeFileBasedWAV(at wavURL: URL) async throws -> TranscriptionResult {
+        openAIWhisperEngine.apiKey = settings.openAIAPIKey
+        openAIWhisperEngine.model = settings.openAIModel
+        openAIWhisperEngine.translateMode = settings.whisperTranslateMode
+
+        switch settings.transcriptionBackend {
+        case .openAIWhisper:
+            return try await openAIWhisperEngine.transcribeFile(at: wavURL)
+        case .whisperKit:
+            guard let pipe = WhisperKitManager.shared.pipe else {
+                throw TranscriptionError.notAvailable
+            }
+            return try await WhisperKitEngine(pipe: pipe).transcribeFile(at: wavURL)
+        case .whisperCpp:
+            guard let whisper = SwiftWhisperManager.shared.whisper else {
+                throw TranscriptionError.notAvailable
+            }
+            return try await SwiftWhisperEngine(whisper: whisper).transcribeFile(at: wavURL)
+        default:
+            throw TranscriptionError.notAvailable
         }
     }
 
@@ -162,6 +319,10 @@ class RecordingCoordinator: ObservableObject {
     }
 
     private func stopRecording() {
+        // Clean up keyword detector if active
+        keywordDetector?.stop()
+        keywordDetector = nil
+
         switch settings.transcriptionBackend {
         case .appleSpeech:
             stopAppleSpeech()
@@ -184,7 +345,13 @@ class RecordingCoordinator: ObservableObject {
         liveStreamTask?.cancel()
         liveStreamTask = nil
 
-        let transcript = liveTranscript
+        let transcript: String
+        if settings.voiceTriggerEnabled {
+            transcript = stripPhrase(settings.stopPhrase, from: liveTranscript)
+        } else {
+            transcript = liveTranscript
+        }
+
         guard !transcript.isEmpty else {
             state = .idle
             return
@@ -212,29 +379,94 @@ class RecordingCoordinator: ObservableObject {
                 let wavURL = try audioRecorder.exportToWAV()
                 defer { try? FileManager.default.removeItem(at: wavURL) }
 
-                let result: TranscriptionResult
-                switch settings.transcriptionBackend {
-                case .openAIWhisper:
-                    result = try await openAIWhisperEngine.transcribeFile(at: wavURL)
-                case .whisperKit:
-                    guard let pipe = WhisperKitManager.shared.pipe else {
-                        throw TranscriptionError.notAvailable
-                    }
-                    result = try await WhisperKitEngine(pipe: pipe).transcribeFile(at: wavURL)
-                case .whisperCpp:
-                    guard let whisper = SwiftWhisperManager.shared.whisper else {
-                        throw TranscriptionError.notAvailable
-                    }
-                    result = try await SwiftWhisperEngine(whisper: whisper).transcribeFile(at: wavURL)
-                default:
-                    throw TranscriptionError.notAvailable
-                }
-
+                let result = try await transcribeFileBasedWAV(at: wavURL)
                 await runPostProcessingPipeline(transcript: result.text)
             } catch {
                 state = .error(message: error.localizedDescription)
             }
         }
+    }
+
+    // MARK: - Voice Trigger Helpers
+
+    /// Remove a keyword phrase from the end of transcribed text (case-insensitive).
+    private func stripPhrase(_ phrase: String, from text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lowered = trimmed.lowercased()
+        let phraseLower = phrase.lowercased()
+
+        if lowered.hasSuffix(phraseLower) {
+            let end = trimmed.index(trimmed.endIndex, offsetBy: -phraseLower.count)
+            return String(trimmed[trimmed.startIndex..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return trimmed
+    }
+
+    /// Deliver transcript to outputs without changing state to idle (for continuous mode).
+    private func deliverAndContinue(transcript: String) async {
+        var text = transcript
+        finalTranscript = text
+
+        // LLM Processing
+        if settings.ollamaEnabled && settings.processingMode != .passthrough {
+            ollamaProcessor.host = settings.ollamaHost
+            ollamaProcessor.model = settings.ollamaModel
+            do {
+                text = try await ollamaProcessor.process(
+                    text: text,
+                    mode: settings.processingMode,
+                    customPrompt: settings.customPrompt.isEmpty ? nil : settings.customPrompt
+                )
+                finalTranscript = text
+            } catch {
+                print("LLM processing failed: \(error.localizedDescription)")
+            }
+        }
+
+        // Translation
+        if settings.translationEnabled {
+            do {
+                text = try await TranslationManager.shared.translate(
+                    text: text,
+                    targetLanguage: settings.translationTargetLanguage
+                )
+                finalTranscript = text
+            } catch {
+                print("Translation failed: \(error.localizedDescription)")
+            }
+        }
+
+        // Output delivery
+        await OutputManager.shared.deliver(text, settings: settings, targetApp: targetApp)
+
+        // Append to history
+        let entry = TranscriptEntry(
+            text: text,
+            duration: recordingDuration,
+            processingMode: processingLabel,
+            processingModel: processingModelName
+        )
+        history.insert(entry, at: 0)
+        if history.count > Self.maxHistoryCount {
+            history = Array(history.prefix(Self.maxHistoryCount))
+        }
+        if let data = try? JSONEncoder().encode(history) {
+            UserDefaults.standard.set(data, forKey: Self.historyKey)
+        }
+
+        NSSound(named: .init("Glass"))?.play()
+    }
+
+    /// Current processing mode label, if active.
+    private var processingLabel: String? {
+        guard settings.ollamaEnabled, settings.processingMode != .passthrough else { return nil }
+        return settings.processingMode.displayName
+    }
+
+    /// Current processing model name, if active.
+    private var processingModelName: String? {
+        guard settings.ollamaEnabled, settings.processingMode != .passthrough else { return nil }
+        return settings.ollamaModel
     }
 
     // MARK: - Post-Processing Pipeline
@@ -282,7 +514,12 @@ class RecordingCoordinator: ObservableObject {
         targetApp = nil
 
         // Append to history
-        let entry = TranscriptEntry(text: text, duration: recordingDuration)
+        let entry = TranscriptEntry(
+            text: text,
+            duration: recordingDuration,
+            processingMode: processingLabel,
+            processingModel: processingModelName
+        )
         history.insert(entry, at: 0)
         if history.count > Self.maxHistoryCount {
             history = Array(history.prefix(Self.maxHistoryCount))
@@ -307,6 +544,8 @@ class RecordingCoordinator: ObservableObject {
 
     func cancel() {
         stopRecordingTimer()
+        keywordDetector?.stop()
+        keywordDetector = nil
         liveStreamTask?.cancel()
         appleSpeechEngine.stopLiveTranscription()
         audioRecorder.stopRecording()

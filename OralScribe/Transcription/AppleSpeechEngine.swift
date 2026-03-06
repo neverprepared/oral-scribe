@@ -61,6 +61,55 @@ class AppleSpeechEngine: TranscriptionEngine {
         }
     }
 
+    /// Restart the recognition task without stopping the audio recorder's tap.
+    /// Ends the current request/task and creates a fresh one. The caller must
+    /// re-iterate the returned stream.
+    func restartRecognition(recorder: AudioRecorder) -> AsyncThrowingStream<String, Error> {
+        // End the current recognition cleanly
+        recognitionRequest?.endAudio()
+        recognitionTask?.cancel()
+        recognitionRequest = nil
+        recognitionTask = nil
+
+        guard let recognizer, recognizer.isAvailable else {
+            return AsyncThrowingStream { $0.finish(throwing: TranscriptionError.notAvailable) }
+        }
+
+        return AsyncThrowingStream { continuation in
+            let request = SFSpeechAudioBufferRecognitionRequest()
+            request.shouldReportPartialResults = true
+            request.requiresOnDeviceRecognition = self.onDevice
+            self.recognitionRequest = request
+
+            self.recognitionTask = recognizer.recognitionTask(with: request) { result, error in
+                if let error {
+                    let nsError = error as NSError
+                    if nsError.code != 301 {
+                        continuation.finish(throwing: error)
+                    } else {
+                        continuation.finish()
+                    }
+                    return
+                }
+
+                if let result {
+                    continuation.yield(result.bestTranscription.formattedString)
+                    if result.isFinal {
+                        continuation.finish()
+                    }
+                }
+            }
+
+            // Re-route the existing audio tap's buffers to the new request.
+            // The recorder's tap is still installed — we just swap the callback target.
+            Task { @MainActor in
+                recorder.setBufferCallback { buffer, _ in
+                    request.append(buffer)
+                }
+            }
+        }
+    }
+
     func stopLiveTranscription() {
         recognitionRequest?.endAudio()
         recognitionTask?.cancel()

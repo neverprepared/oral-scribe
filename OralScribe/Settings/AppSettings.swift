@@ -38,8 +38,8 @@ enum ProcessingMode: String, CaseIterable, Codable {
     var defaultPrompt: String? {
         switch self {
         case .passthrough: return nil
-        case .cleanup: return "Fix grammar, punctuation, and spelling. Return only the corrected text."
-        case .summarize: return "Summarize this text concisely. Return only the summary."
+        case .cleanup: return "Fix grammar, punctuation, and spelling. Output ONLY the corrected text. No preamble, no explanation, no labels, no quotes."
+        case .summarize: return "Summarize this text concisely. Output ONLY the summary. No preamble, no explanation, no labels, no quotes."
         case .custom: return nil
         }
     }
@@ -87,12 +87,16 @@ struct TranscriptEntry: Identifiable, Codable {
     let text: String
     let timestamp: Date
     let duration: TimeInterval
+    let processingMode: String?
+    let processingModel: String?
 
-    init(text: String, duration: TimeInterval) {
+    init(text: String, duration: TimeInterval, processingMode: String? = nil, processingModel: String? = nil) {
         id = UUID()
         self.text = text
         timestamp = Date()
         self.duration = duration
+        self.processingMode = processingMode
+        self.processingModel = processingModel
     }
 }
 

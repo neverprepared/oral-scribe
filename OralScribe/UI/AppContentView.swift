@@ -10,29 +10,32 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
     case translation
     case output
     case shortcut
+    case voiceTrigger
     case history
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .transcription: return "Transcription"
-        case .processing:    return "Processing"
-        case .translation:   return "Translation"
-        case .output:        return "Output"
-        case .shortcut:      return "Shortcut"
-        case .history:       return "History"
+        case .transcription:  return "Transcription"
+        case .processing:     return "Processing"
+        case .translation:    return "Translation"
+        case .output:         return "Output"
+        case .shortcut:       return "Shortcut"
+        case .voiceTrigger:   return "Voice Trigger"
+        case .history:        return "History"
         }
     }
 
     var icon: String {
         switch self {
-        case .transcription: return "waveform"
-        case .processing:    return "cpu"
-        case .translation:   return "globe"
-        case .output:        return "tray.and.arrow.down"
-        case .shortcut:      return "keyboard"
-        case .history:       return "clock"
+        case .transcription:  return "waveform"
+        case .processing:     return "cpu"
+        case .translation:    return "globe"
+        case .output:         return "tray.and.arrow.down"
+        case .shortcut:       return "keyboard"
+        case .voiceTrigger:   return "text.bubble"
+        case .history:        return "clock"
         }
     }
 }
@@ -60,6 +63,9 @@ struct AppContentView: View {
             .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 220)
         } detail: {
             detailPane
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .navigateToHistory)) { _ in
+            selectedItem = .history
         }
     }
 
@@ -89,6 +95,9 @@ struct AppContentView: View {
                 .environmentObject(settings)
         case .shortcut:
             AppShortcutPane()
+        case .voiceTrigger:
+            AppVoiceTriggerPane()
+                .environmentObject(settings)
         case .history:
             AppHistoryPane()
                 .environmentObject(coordinator)
@@ -286,6 +295,8 @@ struct AppWhisperCppSection: View {
 
 struct AppProcessingPane: View {
     @EnvironmentObject var settings: SettingsManager
+    @State private var availableModels: [String] = []
+    @State private var loadingModels = false
 
     var body: some View {
         Form {
@@ -294,7 +305,36 @@ struct AppProcessingPane: View {
 
                 if settings.ollamaEnabled {
                     TextField("Ollama Host", text: $settings.ollamaHost)
-                    TextField("Model", text: $settings.ollamaModel)
+                        .onChange(of: settings.ollamaHost) { _ in
+                            refreshModels()
+                        }
+
+                    HStack {
+                        if availableModels.isEmpty {
+                            TextField("Model", text: $settings.ollamaModel)
+                        } else {
+                            Picker("Model", selection: $settings.ollamaModel) {
+                                ForEach(availableModels, id: \.self) { model in
+                                    Text(model).tag(model)
+                                }
+                                if !availableModels.contains(settings.ollamaModel) && !settings.ollamaModel.isEmpty {
+                                    Text(settings.ollamaModel).tag(settings.ollamaModel)
+                                }
+                            }
+                        }
+                        if loadingModels {
+                            ProgressView().scaleEffect(0.6)
+                        } else {
+                            Button {
+                                refreshModels()
+                            } label: {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.caption)
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundColor(.secondary)
+                        }
+                    }
 
                     Picker("Processing Mode", selection: $settings.processingMode) {
                         ForEach(ProcessingMode.allCases, id: \.self) { mode in
@@ -318,6 +358,18 @@ struct AppProcessingPane: View {
         }
         .formStyle(.grouped)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .onAppear { refreshModels() }
+    }
+
+    private func refreshModels() {
+        guard settings.ollamaEnabled else { return }
+        loadingModels = true
+        let processor = OllamaProcessor(host: settings.ollamaHost)
+        Task {
+            let models = await processor.fetchModels()
+            availableModels = models
+            loadingModels = false
+        }
     }
 }
 
@@ -434,6 +486,38 @@ struct AppShortcutPane: View {
     }
 }
 
+// MARK: - Voice Trigger Pane
+
+struct AppVoiceTriggerPane: View {
+    @EnvironmentObject var settings: SettingsManager
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Enable Voice Trigger", isOn: $settings.voiceTriggerEnabled)
+                Text("Say a keyword during recording to deliver transcript to outputs without stopping.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            if settings.voiceTriggerEnabled {
+                Section("Keywords") {
+                    TextField("Deliver phrase", text: $settings.deliverPhrase)
+                    TextField("Stop phrase", text: $settings.stopPhrase)
+                }
+
+                Section("How it works") {
+                    Text("Works with all backends. Hotkey and stop button still work.\n\nSay the deliver phrase to send the current transcript and keep recording. Say the stop phrase to deliver and end the session.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
 // MARK: - History Pane
 
 struct AppHistoryPane: View {
@@ -450,8 +534,13 @@ struct AppHistoryPane: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            List(coordinator.history) { entry in
-                HistoryEntryRow(entry: entry)
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 10) {
+                    ForEach(coordinator.history) { entry in
+                        HistoryEntryRow(entry: entry)
+                    }
+                }
+                .padding()
             }
             .safeAreaInset(edge: .bottom) {
                 HStack {
@@ -460,6 +549,7 @@ struct AppHistoryPane: View {
                         .foregroundColor(.red)
                         .padding(12)
                 }
+                .background(.bar)
             }
         }
     }
@@ -468,37 +558,120 @@ struct AppHistoryPane: View {
 struct HistoryEntryRow: View {
     let entry: TranscriptEntry
     @State private var copied = false
+    @State private var thinkExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(entry.text)
-                .font(.body)
-                .lineLimit(3)
-                .textSelection(.enabled)
+        VStack(alignment: .leading, spacing: 6) {
+            let parsed = parseThinkTags(entry.text)
+
+            // Think block (collapsible darker sub-card)
+            if let thinking = parsed.thinking {
+                VStack(alignment: .leading, spacing: 4) {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            thinkExpanded.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: thinkExpanded ? "chevron.down" : "chevron.right")
+                                .font(.caption2)
+                            Image(systemName: "brain")
+                                .font(.caption2)
+                            Text("Thinking")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+
+                    if thinkExpanded {
+                        Text(thinking)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textSelection(.enabled)
+                    }
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.primary.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+
+            // Main response
+            if !parsed.response.isEmpty {
+                Text(parsed.response)
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+
+            // Processing labels
+            if entry.processingMode != nil || entry.processingModel != nil {
+                HStack(spacing: 6) {
+                    if let mode = entry.processingMode {
+                        Text(mode)
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.orange.opacity(0.15))
+                            .foregroundColor(.orange)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    if let model = entry.processingModel {
+                        Text(model)
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.purple.opacity(0.15))
+                            .foregroundColor(.purple)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                }
+            }
 
             HStack(spacing: 4) {
                 Text(relativeDate(entry.timestamp))
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundColor(.secondary)
                 Text("·")
+                    .font(.caption2)
                     .foregroundColor(.secondary)
                 Text(formatDuration(entry.duration))
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundColor(.secondary)
                 Spacer()
                 Button {
-                    ClipboardOutput.write(entry.text)
+                    ClipboardOutput.write(parsed.response)
                     copied = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
                 } label: {
                     Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
-                        .font(.caption)
+                        .font(.caption2)
                 }
                 .buttonStyle(.plain)
-                .foregroundColor(copied ? .green : .accentColor)
+                .foregroundColor(copied ? .green : .secondary)
             }
         }
-        .padding(.vertical, 4)
+        .padding(12)
+        .background(Color.accentColor.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func parseThinkTags(_ text: String) -> (thinking: String?, response: String) {
+        guard let openRange = text.range(of: "<think>"),
+              let closeRange = text.range(of: "</think>") else {
+            return (nil, text.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        let thinking = String(text[openRange.upperBound..<closeRange.lowerBound])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let response = String(text[closeRange.upperBound...])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return (thinking.isEmpty ? nil : thinking, response)
     }
 
     private func relativeDate(_ date: Date) -> String {

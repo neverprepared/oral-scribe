@@ -2,11 +2,16 @@ import SwiftUI
 import AppKit
 import KeyboardShortcuts
 
+extension Notification.Name {
+    static let navigateToHistory = Notification.Name("navigateToHistory")
+}
+
 // MARK: - Menu Bar Popover View (slim)
 
 struct MenuBarPopoverView: View {
     @EnvironmentObject var coordinator: RecordingCoordinator
     @EnvironmentObject var settings: SettingsManager
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(spacing: 0) {
@@ -35,15 +40,25 @@ struct MenuBarPopoverView: View {
                 .environmentObject(coordinator)
                 .padding(.vertical, 10)
 
-            // Transcript snippet (if any)
+            // Link to history when there's a transcript
             if !transcriptText.isEmpty {
-                Text(transcriptText)
-                    .font(.callout)
-                    .foregroundColor(coordinator.state == .recording ? .primary : .secondary)
-                    .lineLimit(3)
+                Button {
+                    dismissPopover()
+                    openMainWindow()
+                    NotificationCenter.default.post(name: .navigateToHistory, object: nil)
+                } label: {
+                    HStack {
+                        Image(systemName: "clock")
+                            .font(.caption)
+                        Text("View in History")
+                            .font(.callout)
+                    }
+                    .foregroundColor(.accentColor)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 14)
-                    .padding(.bottom, 8)
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 8)
             }
 
             Divider()
@@ -63,8 +78,8 @@ struct MenuBarPopoverView: View {
                 Spacer()
 
                 Button("Open App") {
-                    NSApp.activate(ignoringOtherApps: true)
-                    NSApp.windows.first(where: { $0.title == "Oral Scribe" })?.makeKeyAndOrderFront(nil)
+                    dismissPopover()
+                    openMainWindow()
                 }
                 .buttonStyle(.plain)
                 .foregroundColor(.accentColor)
@@ -119,5 +134,22 @@ struct MenuBarPopoverView: View {
     private func formatDuration(_ t: TimeInterval) -> String {
         let s = Int(t)
         return "\(s / 60):\(String(format: "%02d", s % 60))"
+    }
+
+    private func dismissPopover() {
+        // The MenuBarExtra .window style popover is the current key window
+        if let panel = NSApp.keyWindow, type(of: panel).description().contains("StatusBarWindow") || panel !== NSApp.windows.first(where: { $0.title == "Oral Scribe" }) {
+            panel.close()
+        }
+    }
+
+    private func openMainWindow() {
+        if let window = NSApp.windows.first(where: { $0.title == "Oral Scribe" }) {
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+        } else {
+            openWindow(id: "main")
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 }

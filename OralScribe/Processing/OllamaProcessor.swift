@@ -11,6 +11,19 @@ class OllamaProcessor: LLMProcessor {
         self.model = model
     }
 
+    /// Fetch the list of locally installed model names from the Ollama API.
+    func fetchModels() async -> [String] {
+        guard let url = URL(string: "\(host)/api/tags") else { return [] }
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let models = json["models"] as? [[String: Any]] else { return [] }
+            return models.compactMap { $0["name"] as? String }.sorted()
+        } catch {
+            return []
+        }
+    }
+
     func process(text: String, mode: ProcessingMode, customPrompt: String?) async throws -> String {
         guard mode != .passthrough else { return text }
 
@@ -32,7 +45,8 @@ class OllamaProcessor: LLMProcessor {
 
         let payload: [String: Any] = [
             "model": model,
-            "prompt": "\(systemPrompt)\n\nText: \(text)",
+            "system": systemPrompt,
+            "prompt": text,
             "stream": false
         ]
 
@@ -55,11 +69,23 @@ class OllamaProcessor: LLMProcessor {
                 throw LLMError.noResponse
             }
 
-            return responseText.trimmingCharacters(in: .whitespacesAndNewlines)
+            return stripPreamble(responseText.trimmingCharacters(in: .whitespacesAndNewlines))
         } catch let error as LLMError {
             throw error
         } catch {
             throw LLMError.networkError(error)
         }
+    }
+
+    /// Strip common LLM preamble from the response as a safety net.
+    private func stripPreamble(_ text: String) -> String {
+        let lowered = text.lowercased()
+        // Match "Here is/Here's the <anything>:" on the first line
+        if let colonRange = lowered.range(of: ":"),
+           lowered[lowered.startIndex..<colonRange.lowerBound].hasPrefix("here") {
+            let after = String(text[colonRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+            return after.isEmpty ? text : after
+        }
+        return text
     }
 }

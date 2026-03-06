@@ -190,7 +190,7 @@ class SettingsManager: ObservableObject {
         deliverPhrase = defaults.string(forKey: Keys.deliverPhrase) ?? "deliver"
         stopPhrase = defaults.string(forKey: Keys.stopPhrase) ?? "stop listening"
 
-        outputToClipboard = defaults.object(forKey: Keys.outputToClipboard) as? Bool ?? true
+        outputToClipboard = defaults.object(forKey: Keys.outputToClipboard) as? Bool ?? false
         outputToActiveField = defaults.object(forKey: Keys.outputToActiveField) as? Bool ?? true
         outputToAppleNotes = defaults.bool(forKey: Keys.outputToAppleNotes)
         outputToFile = defaults.bool(forKey: Keys.outputToFile)

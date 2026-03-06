@@ -420,8 +420,7 @@ struct AppOutputPane: View {
                     }
             }
             Section("Destinations") {
-                Toggle("Clipboard (always on)", isOn: .constant(true))
-                    .disabled(true)
+                Toggle("Clipboard", isOn: $settings.outputToClipboard)
                 Toggle("Active Text Field", isOn: $settings.outputToActiveField)
                 Toggle("Apple Notes", isOn: $settings.outputToAppleNotes)
                 Toggle("Append to File", isOn: $settings.outputToFile)

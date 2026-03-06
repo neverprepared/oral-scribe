@@ -77,6 +77,15 @@ class SwiftWhisperEngine: TranscriptionEngine {
         "let's go\\!?$",
     ]
 
+    // Pre-compiled (plain, regex) pairs — avoids recompiling on every transcription.
+    private static let compiledPatterns: [(plain: String, regex: NSRegularExpression?)] =
+        trailingHallucinationPatterns.map { pattern in
+            let plain = pattern
+                .replacingOccurrences(of: "\\.\\?\\$", with: "", options: .regularExpression)
+            let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive)
+            return (plain: plain, regex: regex)
+        }
+
     private static func removeTrailingHallucinations(_ text: String) -> String {
         // Split into sentences, remove trailing ones that are pure hallucinations
         var sentences = text.components(separatedBy: .init(charactersIn: ".!?"))
@@ -85,9 +94,12 @@ class SwiftWhisperEngine: TranscriptionEngine {
 
         while let last = sentences.last {
             let lower = last.lowercased()
-            let isHallucination = trailingHallucinationPatterns.contains { pattern in
-                lower == pattern.replacingOccurrences(of: "\\.\\?\\$", with: "", options: .regularExpression)
-                    || lower.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil
+            let isHallucination = compiledPatterns.contains { entry in
+                lower == entry.plain
+                    || (entry.regex?.firstMatch(
+                        in: lower,
+                        range: NSRange(lower.startIndex..., in: lower)
+                    ) != nil)
             }
             if isHallucination {
                 sentences.removeLast()

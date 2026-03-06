@@ -41,28 +41,39 @@ class OpenAIWhisperEngine: TranscriptionEngine {
         let boundary = UUID().uuidString
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.timeoutInterval = 300
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
-        guard let audioData = try? Data(contentsOf: fileURL) else {
-            throw TranscriptionError.fileError("Cannot read audio file")
-        }
+        // Write multipart body to a temp file so URLSession streams the audio
+        // rather than loading it entirely into memory.
+        let bodyURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("oralscribe_upload_\(UUID().uuidString).bin")
+        defer { try? FileManager.default.removeItem(at: bodyURL) }
 
-        var body = Data()
-        body.appendMultipart(boundary: boundary, name: "model", value: model)
-        body.appendMultipart(boundary: boundary, name: "response_format", value: "text")
-        body.appendMultipartFile(
-            boundary: boundary,
-            name: "file",
-            filename: "audio.wav",
-            mimeType: "audio/wav",
-            data: audioData
-        )
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-        request.httpBody = body
+        var preamble = Data()
+        preamble.appendMultipart(boundary: boundary, name: "model", value: model)
+        preamble.appendMultipart(boundary: boundary, name: "response_format", value: "text")
+        preamble.append("--\(boundary)\r\n".data(using: .utf8)!)
+        preamble.append("Content-Disposition: form-data; name=\"file\"; filename=\"audio.wav\"\r\n".data(using: .utf8)!)
+        preamble.append("Content-Type: audio/wav\r\n\r\n".data(using: .utf8)!)
+
+        try preamble.write(to: bodyURL)
+
+        let bodyHandle = try FileHandle(forWritingTo: bodyURL)
+        bodyHandle.seekToEndOfFile()
+        let audioHandle = try FileHandle(forReadingFrom: fileURL)
+        while true {
+            let chunk = audioHandle.readData(ofLength: 65536)
+            if chunk.isEmpty { break }
+            bodyHandle.write(chunk)
+        }
+        audioHandle.closeFile()
+        bodyHandle.write("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        bodyHandle.closeFile()
 
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await URLSession.shared.upload(for: request, fromFile: bodyURL)
 
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
                 let errorText = String(data: data, encoding: .utf8) ?? "Unknown error"
@@ -90,13 +101,5 @@ private extension Data {
         append("--\(boundary)\r\n".data(using: .utf8)!)
         append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
         append("\(value)\r\n".data(using: .utf8)!)
-    }
-
-    mutating func appendMultipartFile(boundary: String, name: String, filename: String, mimeType: String, data fileData: Data) {
-        append("--\(boundary)\r\n".data(using: .utf8)!)
-        append("Content-Disposition: form-data; name=\"\(name)\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
-        append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
-        append(fileData)
-        append("\r\n".data(using: .utf8)!)
     }
 }

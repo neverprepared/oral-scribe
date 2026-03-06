@@ -106,6 +106,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applicationWillTerminate(_ notification: Notification) {
+        ClipboardOutput.clearIfOurs()
+    }
+
     private func showPermissionAlert(title: String, message: String) {
         let alert = NSAlert()
         alert.messageText = title

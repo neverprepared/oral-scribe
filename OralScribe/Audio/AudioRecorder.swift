@@ -10,7 +10,9 @@ class AudioRecorder: ObservableObject {
 
     private let audioEngine = AVAudioEngine()
     private var bufferCallback: ((AVAudioPCMBuffer, AVAudioTime) -> Void)?
-    private var recordingBuffers: [AVAudioPCMBuffer] = []
+    private var recordingFile: AVAudioFile?
+    private var recordingConverter: AVAudioConverter?
+    private var recordingURL: URL?
     private var recordingStartTime: Date?
 
     var recordingDuration: TimeInterval {
@@ -24,13 +26,30 @@ class AudioRecorder: ObservableObject {
         guard !isRecording else { return }
 
         bufferCallback = bufferHandler
-        recordingBuffers.removeAll()
         recordingStartTime = Date()
 
         let inputNode = audioEngine.inputNode
         let inputFormat = inputNode.outputFormat(forBus: 0)
 
-        // Install tap at native format, convert internally if needed
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("oralscribe_\(UUID().uuidString).wav")
+
+        let outputFile: AVAudioFile
+        do {
+            outputFile = try AVAudioFile(forWriting: tempURL, settings: AudioFormat.wavFormat.settings)
+        } catch {
+            throw AudioRecorderError.fileCreationFailed
+        }
+
+        guard let converter = AVAudioConverter(from: inputFormat, to: outputFile.processingFormat) else {
+            throw AudioRecorderError.conversionFailed
+        }
+
+        recordingFile = outputFile
+        recordingConverter = converter
+        recordingURL = tempURL
+
+        // Install tap at native format, convert and stream to disk
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, time in
             guard let self else { return }
             Task { @MainActor in
@@ -39,7 +58,15 @@ class AudioRecorder: ObservableObject {
         }
 
         audioEngine.prepare()
-        try audioEngine.start()
+        do {
+            try audioEngine.start()
+        } catch {
+            inputNode.removeTap(onBus: 0)
+            recordingFile = nil
+            recordingConverter = nil
+            recordingURL = nil
+            throw error
+        }
         isRecording = true
     }
 
@@ -47,8 +74,8 @@ class AudioRecorder: ObservableObject {
         // Update power level for metering
         updatePowerLevel(from: buffer)
 
-        // Collect for WAV export
-        recordingBuffers.append(buffer)
+        // Stream buffer to disk
+        writeBufferToDisk(buffer)
 
         // Forward to live consumer (e.g., AppleSpeechEngine)
         bufferCallback?(buffer, time)
@@ -74,67 +101,47 @@ class AudioRecorder: ObservableObject {
     // MARK: - WAV Export
 
     func exportToWAV() throws -> URL {
-        let tempURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("oralscribe_\(Date().timeIntervalSince1970).wav")
-
-        guard !recordingBuffers.isEmpty,
-              let firstBuffer = recordingBuffers.first else {
+        guard let url = recordingURL else {
             throw AudioRecorderError.noAudioData
         }
 
-        guard let sourceFormat = AVAudioFormat(
-            commonFormat: .pcmFormatFloat32,
-            sampleRate: firstBuffer.format.sampleRate,
-            channels: firstBuffer.format.channelCount,
-            interleaved: false
-        ) else {
-            throw AudioRecorderError.noAudioData
-        }
+        // Nilling recordingFile triggers AVAudioFile.deinit → flushes and closes the file
+        recordingFile = nil
+        recordingConverter = nil
+        recordingURL = nil
 
-        guard let outputFile = try? AVAudioFile(
-            forWriting: tempURL,
-            settings: AudioFormat.wavFormat.settings
-        ) else {
-            throw AudioRecorderError.fileCreationFailed
-        }
+        return url
+    }
 
-        // AVAudioFile's processingFormat is always float32 non-interleaved —
-        // buffers written via write(from:) must be in this format, NOT the file's
-        // storage format (int16 interleaved). Convert to processingFormat so the
-        // file's internal converter has nothing to do and won't abort.
-        let processingFormat = outputFile.processingFormat
+    // MARK: - Disk Streaming
 
-        guard let converter = AVAudioConverter(from: sourceFormat, to: processingFormat) else {
-            throw AudioRecorderError.conversionFailed
-        }
+    private func writeBufferToDisk(_ buffer: AVAudioPCMBuffer) {
+        guard let converter = recordingConverter, let file = recordingFile else { return }
 
-        for buffer in recordingBuffers {
-            let frameCapacity = AVAudioFrameCount(
-                Double(buffer.frameLength) * processingFormat.sampleRate / buffer.format.sampleRate
-            )
-            guard let outputBuffer = AVAudioPCMBuffer(
-                pcmFormat: processingFormat,
-                frameCapacity: frameCapacity
-            ) else { continue }
+        let processingFormat = file.processingFormat
+        let frameCapacity = AVAudioFrameCount(
+            Double(buffer.frameLength) * processingFormat.sampleRate / buffer.format.sampleRate
+        )
+        guard let outputBuffer = AVAudioPCMBuffer(
+            pcmFormat: processingFormat,
+            frameCapacity: max(frameCapacity, 1)
+        ) else { return }
 
-            var inputConsumed = false
-            var error: NSError?
-            converter.convert(to: outputBuffer, error: &error) { _, outStatus in
-                if inputConsumed {
-                    outStatus.pointee = .noDataNow
-                    return nil
-                }
-                inputConsumed = true
-                outStatus.pointee = .haveData
-                return buffer
+        var inputConsumed = false
+        var error: NSError?
+        converter.convert(to: outputBuffer, error: &error) { _, outStatus in
+            if inputConsumed {
+                outStatus.pointee = .noDataNow
+                return nil
             }
-
-            if error == nil && outputBuffer.frameLength > 0 {
-                try outputFile.write(from: outputBuffer)
-            }
+            inputConsumed = true
+            outStatus.pointee = .haveData
+            return buffer
         }
 
-        return tempURL
+        if error == nil && outputBuffer.frameLength > 0 {
+            try? file.write(from: outputBuffer)
+        }
     }
 
     // MARK: - Metering

@@ -9,6 +9,13 @@ class OllamaProcessor: LLMProcessor {
     init(host: String = "http://localhost:11434", model: String = "llama3.2") {
         self.host = host
         self.model = model
+
+        if let url = URL(string: host), let hostname = url.host {
+            let localHosts = ["localhost", "127.0.0.1", "::1"]
+            if !localHosts.contains(hostname) {
+                print("OralScribe: Ollama host '\(hostname)' is not localhost — transcripts will be sent to this remote host.")
+            }
+        }
     }
 
     /// Fetch the list of locally installed model names from the Ollama API.
@@ -53,7 +60,7 @@ class OllamaProcessor: LLMProcessor {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 30
+        request.timeoutInterval = 120
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
 
         do {

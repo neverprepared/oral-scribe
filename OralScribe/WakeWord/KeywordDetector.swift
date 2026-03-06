@@ -8,7 +8,7 @@ import AVFoundation
 /// to detect deliver/stop keywords during file-based recording sessions.
 @MainActor
 class KeywordDetector: ObservableObject {
-    private var audioEngine: AVAudioEngine?
+    private let audioEngine = AVAudioEngine()
     private var recognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
@@ -70,7 +70,6 @@ class KeywordDetector: ObservableObject {
     private func startRecognitionSession() {
         guard isRunning, !delivering else { return }
 
-        let engine = AVAudioEngine()
         let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
         guard let recognizer, recognizer.isAvailable else { return }
 
@@ -78,7 +77,6 @@ class KeywordDetector: ObservableObject {
         request.shouldReportPartialResults = true
         request.requiresOnDeviceRecognition = true
 
-        self.audioEngine = engine
         self.recognizer = recognizer
         self.recognitionRequest = request
 
@@ -98,16 +96,16 @@ class KeywordDetector: ObservableObject {
             }
         }
 
-        let inputNode = engine.inputNode
+        let inputNode = audioEngine.inputNode
         let inputFormat = inputNode.outputFormat(forBus: 0)
 
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { buffer, _ in
             request.append(buffer)
         }
 
-        engine.prepare()
+        audioEngine.prepare()
         do {
-            try engine.start()
+            try audioEngine.start()
         } catch {
             print("KeywordDetector: failed to start audio engine: \(error)")
             teardownSession()
@@ -127,9 +125,10 @@ class KeywordDetector: ObservableObject {
     private func teardownSession() {
         recognitionRequest?.endAudio()
         recognitionTask?.cancel()
-        audioEngine?.inputNode.removeTap(onBus: 0)
-        audioEngine?.stop()
-        audioEngine = nil
+        if audioEngine.isRunning {
+            audioEngine.inputNode.removeTap(onBus: 0)
+            audioEngine.stop()
+        }
         recognitionRequest = nil
         recognitionTask = nil
     }

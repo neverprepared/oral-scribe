@@ -8,7 +8,7 @@ struct OralScribeApp: App {
     @StateObject private var settings = SettingsManager.shared
 
     var body: some Scene {
-        WindowGroup("Oral Scribe", id: "main") {
+        Window("Oral Scribe", id: "main") {
             AppContentView()
                 .environmentObject(coordinator)
                 .environmentObject(settings)

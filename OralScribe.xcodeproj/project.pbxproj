@@ -17,6 +17,7 @@
 		44DD6AFD250767A9A90A1CC6 /* AudioFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD0D435BAB94FAB4026D2DEE /* AudioFormat.swift */; };
 		4955DC64BEAE9C2BF608E98C /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 87AF63CBD4EFA47230636DB6 /* WhisperKit */; };
 		53968DA9867A912FA8EF59E0 /* RecordingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 289F7267B1587CD0CC62AE53 /* RecordingCoordinator.swift */; };
+		5A3D6C2FABFEA3F11F2F1D27 /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CFDCCFE9FA023F83D658B80 /* HistoryStore.swift */; };
 		5B2A35FE0EDF114A780A2D2D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F3D16106AE495E09C44B39FC /* Assets.xcassets */; };
 		62B776F2D37119F88B723449 /* TranslationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27231FF45F82B3B49B6F4573 /* TranslationManager.swift */; };
 		67741DDEB00B28769A4C6128 /* AccessibilityOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96BD26EB3D5356C4C97C5DC5 /* AccessibilityOutput.swift */; };
@@ -61,6 +62,7 @@
 		5A89A6A4FBC4C1D26EE7E370 /* ClaudeProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeProcessor.swift; sourceTree = "<group>"; };
 		7CF016F2851D2C126FB24E12 /* WhisperKitEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperKitEngine.swift; sourceTree = "<group>"; };
 		88D69B7C191FFE671BF8CFAA /* EnginePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnginePickerView.swift; sourceTree = "<group>"; };
+		8CFDCCFE9FA023F83D658B80 /* HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryStore.swift; sourceTree = "<group>"; };
 		96BD26EB3D5356C4C97C5DC5 /* AccessibilityOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityOutput.swift; sourceTree = "<group>"; };
 		B657A41FF435C3D3678095E3 /* AudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorder.swift; sourceTree = "<group>"; };
 		B87FFD0F0B7CB560AB20D93F /* OpenAIWhisperEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAIWhisperEngine.swift; sourceTree = "<group>"; };
@@ -160,6 +162,7 @@
 				3FEDD28979F54D63DEA54E21 /* Output */,
 				B4260F851FD0E42CE6AA6397 /* Processing */,
 				9A3127C9EC2C2C5C60675C51 /* Resources */,
+				9C806BF2BBFD9E0BC2E843A7 /* Security */,
 				72E09E44EFB8782C3324B1EB /* Settings */,
 				D3B12E803F28A9CA5443CE77 /* Transcription */,
 				4054BE3868C6B463B88B468F /* Translation */,
@@ -209,6 +212,14 @@
 				F3D16106AE495E09C44B39FC /* Assets.xcassets */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		9C806BF2BBFD9E0BC2E843A7 /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				8CFDCCFE9FA023F83D658B80 /* HistoryStore.swift */,
+			);
+			path = Security;
 			sourceTree = "<group>";
 		};
 		B4260F851FD0E42CE6AA6397 /* Processing */ = {
@@ -343,6 +354,7 @@
 				EDB74EB61B0F38C88C4408CA /* ClaudeProcessor.swift in Sources */,
 				F6D39563CD43EF806C6F0F30 /* ClipboardOutput.swift in Sources */,
 				9FCF57A5D3F204EA97E2A57E /* EnginePickerView.swift in Sources */,
+				5A3D6C2FABFEA3F11F2F1D27 /* HistoryStore.swift in Sources */,
 				8CF22D0CAEC71D862F23FD2D /* HotkeyManager.swift in Sources */,
 				37E8379EE033DA6014929267 /* HotkeyRecorderView.swift in Sources */,
 				8B015BEA3F92AB601F98E1E4 /* KeywordDetector.swift in Sources */,

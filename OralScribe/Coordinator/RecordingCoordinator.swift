@@ -44,7 +44,6 @@ class RecordingCoordinator: ObservableObject {
     /// Tracks the last partial text we already scanned for keywords, to avoid re-triggering.
     private var lastDeliveredPartialLength: Int = 0
 
-    private static let historyKey = "transcriptHistory"
     private static let maxHistoryCount = 50
 
     private init() {
@@ -54,10 +53,7 @@ class RecordingCoordinator: ObservableObject {
             .assign(to: \.powerLevel, on: self)
 
         // Load persisted history
-        if let data = UserDefaults.standard.data(forKey: Self.historyKey),
-           let entries = try? JSONDecoder().decode([TranscriptEntry].self, from: data) {
-            history = entries
-        }
+        history = HistoryStore.load()
     }
 
     // MARK: - Toggle
@@ -450,9 +446,7 @@ class RecordingCoordinator: ObservableObject {
         if history.count > Self.maxHistoryCount {
             history = Array(history.prefix(Self.maxHistoryCount))
         }
-        if let data = try? JSONEncoder().encode(history) {
-            UserDefaults.standard.set(data, forKey: Self.historyKey)
-        }
+        HistoryStore.save(history)
 
         NSSound(named: .init("Glass"))?.play()
     }
@@ -524,9 +518,7 @@ class RecordingCoordinator: ObservableObject {
         if history.count > Self.maxHistoryCount {
             history = Array(history.prefix(Self.maxHistoryCount))
         }
-        if let data = try? JSONEncoder().encode(history) {
-            UserDefaults.standard.set(data, forKey: Self.historyKey)
-        }
+        HistoryStore.save(history)
 
         // Done
         NSSound(named: .init("Glass"))?.play()
@@ -555,6 +547,6 @@ class RecordingCoordinator: ObservableObject {
 
     func clearHistory() {
         history = []
-        UserDefaults.standard.removeObject(forKey: Self.historyKey)
+        HistoryStore.clear()
     }
 }

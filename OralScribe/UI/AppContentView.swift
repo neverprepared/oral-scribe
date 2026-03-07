@@ -12,6 +12,7 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
     case shortcut
     case voiceTrigger
     case history
+    case startup
 
     var id: String { rawValue }
 
@@ -24,6 +25,7 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
         case .shortcut:       return "Shortcut"
         case .voiceTrigger:   return "Voice Trigger"
         case .history:        return "History"
+        case .startup:        return "Startup"
         }
     }
 
@@ -36,6 +38,7 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
         case .shortcut:       return "keyboard"
         case .voiceTrigger:   return "text.bubble"
         case .history:        return "clock"
+        case .startup:        return "power"
         }
     }
 }
@@ -101,6 +104,8 @@ struct AppContentView: View {
         case .history:
             AppHistoryPane()
                 .environmentObject(coordinator)
+        case .startup:
+            AppStartupPane()
         case nil:
             Text("Select an item from the sidebar.")
                 .foregroundColor(.secondary)
@@ -401,24 +406,9 @@ struct AppTranslationPane: View {
 
 struct AppOutputPane: View {
     @EnvironmentObject var settings: SettingsManager
-    @State private var launchAtLogin = (SMAppService.mainApp.status == .enabled)
 
     var body: some View {
         Form {
-            Section("Startup") {
-                Toggle("Launch at Login", isOn: $launchAtLogin)
-                    .onChange(of: launchAtLogin) { enabled in
-                        do {
-                            if enabled {
-                                try SMAppService.mainApp.register()
-                            } else {
-                                try SMAppService.mainApp.unregister()
-                            }
-                        } catch {
-                            launchAtLogin = !enabled
-                        }
-                    }
-            }
             Section("Destinations") {
                 Toggle("Clipboard", isOn: $settings.outputToClipboard)
                 Toggle("Active Text Field", isOn: $settings.outputToActiveField)
@@ -462,6 +452,33 @@ struct AppOutputPane: View {
         if panel.runModal() == .OK, let url = panel.url {
             settings.outputFilePath = url.path
         }
+    }
+}
+
+// MARK: - Startup Pane
+
+struct AppStartupPane: View {
+    @State private var launchAtLogin = (SMAppService.mainApp.status == .enabled)
+
+    var body: some View {
+        Form {
+            Section("Startup") {
+                Toggle("Launch at Login", isOn: $launchAtLogin)
+                    .onChange(of: launchAtLogin) { enabled in
+                        do {
+                            if enabled {
+                                try SMAppService.mainApp.register()
+                            } else {
+                                try SMAppService.mainApp.unregister()
+                            }
+                        } catch {
+                            launchAtLogin = !enabled
+                        }
+                    }
+            }
+        }
+        .formStyle(.grouped)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 

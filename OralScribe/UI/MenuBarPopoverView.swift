@@ -77,7 +77,7 @@ struct MenuBarPopoverView: View {
 
                 Spacer()
 
-                Button("Open App") {
+                Button("Settings") {
                     dismissPopover()
                     openMainWindow()
                 }

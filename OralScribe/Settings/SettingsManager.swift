@@ -134,6 +134,11 @@ class SettingsManager: ObservableObject {
         didSet { UserDefaults.standard.set(outputAutoSubmit, forKey: Keys.outputAutoSubmit) }
     }
 
+    // Onboarding
+    @Published var hasCompletedOnboarding: Bool {
+        didSet { UserDefaults.standard.set(hasCompletedOnboarding, forKey: Keys.hasCompletedOnboarding) }
+    }
+
     private enum Keys {
         static let transcriptionBackend = "transcriptionBackend"
         static let speechLocale = "speechLocale"
@@ -159,6 +164,7 @@ class SettingsManager: ObservableObject {
         static let outputToFile = "outputToFile"
         static let outputFilePath = "outputFilePath"
         static let outputAutoSubmit = "outputAutoSubmit"
+        static let hasCompletedOnboarding = "hasCompletedOnboarding"
     }
 
     private init() {
@@ -200,5 +206,7 @@ class SettingsManager: ObservableObject {
         outputToFile = defaults.bool(forKey: Keys.outputToFile)
         outputFilePath = defaults.string(forKey: Keys.outputFilePath) ?? ""
         outputAutoSubmit = defaults.bool(forKey: Keys.outputAutoSubmit)
+
+        hasCompletedOnboarding = defaults.bool(forKey: Keys.hasCompletedOnboarding)
     }
 }

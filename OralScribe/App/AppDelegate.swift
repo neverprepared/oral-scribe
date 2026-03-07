@@ -29,7 +29,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .receive(on: RunLoop.main)
             .sink { [weak self] state in
                 switch state {
-                case .recording:
+                case .recording, .transcribing, .processing, .translating, .delivering:
                     self?.showOverlay()
                 default:
                     self?.hideOverlay()

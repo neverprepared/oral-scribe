@@ -47,6 +47,7 @@
 		DBE34173B63CAD35E4D45092 /* OutputManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3840445273B9C479D36F1B3B /* OutputManager.swift */; };
 		E0634B5443CA02E2590FCACB /* OpenAIWhisperEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B87FFD0F0B7CB560AB20D93F /* OpenAIWhisperEngine.swift */; };
 		EDB74EB61B0F38C88C4408CA /* ClaudeProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A89A6A4FBC4C1D26EE7E370 /* ClaudeProcessor.swift */; };
+		F38A5F6D2A32646DE4CDB97C /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C048CEB67BC2C7E0C0446A8 /* OnboardingView.swift */; };
 		F6D39563CD43EF806C6F0F30 /* ClipboardOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 323D643B6FD03653B38EAEF1 /* ClipboardOutput.swift */; };
 /* End PBXBuildFile section */
 
@@ -61,6 +62,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0C048CEB67BC2C7E0C0446A8 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		142DDB2439DAF678FE9B5672 /* OralScribe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OralScribe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1696561040668EFCDC8050AC /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
 		1FBB8FC2302E8E51D6938C66 /* SwiftWhisperManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftWhisperManager.swift; sourceTree = "<group>"; };
@@ -288,6 +290,7 @@
 			children = (
 				F5812A78D0D994513C13B610 /* AppContentView.swift */,
 				FA3CE0B4A09E44B556F0AC97 /* MenuBarPopoverView.swift */,
+				0C048CEB67BC2C7E0C0446A8 /* OnboardingView.swift */,
 				BEE95E7B88C4702613D21262 /* RecordingOverlayWindow.swift */,
 				2327CE77B90364AAC367A023 /* Components */,
 			);
@@ -419,6 +422,7 @@
 				0CBD30A797080CAE1CD0FE5A /* MenuBarPopoverView.swift in Sources */,
 				787517F3C918A34E888E1226 /* NotesOutput.swift in Sources */,
 				84D6B6E940822AB025AA6B01 /* OllamaProcessor.swift in Sources */,
+				F38A5F6D2A32646DE4CDB97C /* OnboardingView.swift in Sources */,
 				E0634B5443CA02E2590FCACB /* OpenAIWhisperEngine.swift in Sources */,
 				BFC4E5D0C81732C414BFC789 /* OralScribeApp.swift in Sources */,
 				DBE34173B63CAD35E4D45092 /* OutputManager.swift in Sources */,

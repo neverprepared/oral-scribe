@@ -7,11 +7,22 @@ struct OralScribeApp: App {
     @StateObject private var coordinator = RecordingCoordinator.shared
     @StateObject private var settings = SettingsManager.shared
 
+    @State private var showOnboarding = false
+
     var body: some Scene {
         Window("Oral Scribe", id: "main") {
             AppContentView()
                 .environmentObject(coordinator)
                 .environmentObject(settings)
+                .sheet(isPresented: $showOnboarding) {
+                    OnboardingView(isPresented: $showOnboarding)
+                        .environmentObject(settings)
+                }
+                .onAppear {
+                    if !settings.hasCompletedOnboarding {
+                        showOnboarding = true
+                    }
+                }
         }
         .defaultSize(width: 820, height: 540)
 

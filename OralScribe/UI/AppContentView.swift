@@ -23,64 +23,6 @@ struct VisualEffectBlur: NSViewRepresentable {
     }
 }
 
-// MARK: - Window Transparency Helper
-
-/// Makes the hosting NSWindow and its SwiftUI content view fully transparent so
-/// vibrancy effects with .behindWindow blending show through to the desktop.
-struct WindowTransparencyHelper: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async { Self.configure(view) }
-        return view
-    }
-    func updateNSView(_ nsView: NSView, context: Context) {
-        DispatchQueue.main.async { Self.configure(nsView) }
-    }
-    private static func configure(_ view: NSView) {
-        guard let window = view.window else { return }
-        window.backgroundColor = .clear
-        window.isOpaque = false
-        // Clear the SwiftUI NSHostingView layer so it doesn't fill with window background
-        window.contentView?.wantsLayer = true
-        window.contentView?.layer?.backgroundColor = CGColor.clear
-    }
-}
-
-// MARK: - Sidebar Transparency Helper
-//
-// NavigationSplitView injects its own NSVisualEffectView for the sidebar column at the
-// AppKit level. SwiftUI .background() / .glassEffect() modifiers sit beneath it and have
-// no visible effect. This helper walks up the superview chain to find that injected view
-// and replaces its material with a more transparent one.
-
-struct SidebarTransparencyHelper: NSViewRepresentable {
-    var alpha: CGFloat
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async { Self.configure(from: view, alpha: alpha) }
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        DispatchQueue.main.async { Self.configure(from: nsView, alpha: alpha) }
-    }
-
-    private static func configure(from view: NSView, alpha: CGFloat) {
-        var current = view.superview
-        while let v = current {
-            if let effect = v as? NSVisualEffectView {
-                effect.material = .underWindowBackground
-                effect.blendingMode = .behindWindow
-                effect.state = .active
-                effect.alphaValue = alpha
-                return
-            }
-            current = v.superview
-        }
-    }
-}
-
 // MARK: - Sidebar Items
 
 enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
@@ -168,7 +110,7 @@ struct AppContentView: View {
                 sidebarRecordButton
                     .padding(12)
             }
-            .background(SidebarTransparencyHelper(alpha: 0.5))
+            .background(VisualEffectBlur(material: .sidebar, blendingMode: .behindWindow))
             .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 220)
         } detail: {
             detailPane

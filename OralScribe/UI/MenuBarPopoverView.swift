@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import KeyboardShortcuts
 
+
 extension Notification.Name {
     static let navigateToHistory = Notification.Name("navigateToHistory")
 }
@@ -14,6 +15,17 @@ struct MenuBarPopoverView: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
+        if #available(macOS 26, *) {
+            popoverContent
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+                .background(WindowTransparencyHelper())
+        } else {
+            popoverContent
+        }
+    }
+
+    @ViewBuilder
+    private var popoverContent: some View {
         VStack(spacing: 0) {
             // Pipeline summary line + recording timer
             HStack {

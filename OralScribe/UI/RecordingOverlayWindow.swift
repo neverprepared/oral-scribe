@@ -63,99 +63,7 @@ struct RecordingPillView: View {
                     Capsule()
                         .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
                 )
-
-            HStack(spacing: 12) {
-                if isRecording {
-                    // Pulsing red dot
-                    Circle()
-                        .fill(Color.red)
-                        .frame(width: 10, height: 10)
-                        .scaleEffect(dotScale)
-                        .animation(
-                            .easeInOut(duration: 0.6).repeatForever(autoreverses: true),
-                            value: dotScale
-                        )
-                        .onAppear { dotScale = 1.4 }
-                } else {
-                    // Spinner for post-recording states
-                    ProgressView()
-                        .controlSize(.small)
-                        .colorScheme(.dark)
-                }
-
-                // Recording timer
-                Text(formatDuration(coordinator.recordingDuration))
-                    .font(.system(.caption2, design: .monospaced).weight(.semibold))
-                    .foregroundColor(.white.opacity(0.8))
-
-                if isRecording {
-                    // Waveform bars
-                    HStack(alignment: .center, spacing: 2) {
-                        ForEach(0..<30, id: \.self) { i in
-                            RoundedRectangle(cornerRadius: 1.5)
-                                .fill(Color.white.opacity(0.85))
-                                .frame(width: 3, height: barHeights[i] * 36 + 4)
-                                .animation(.easeInOut(duration: 0.1), value: barHeights[i])
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-
-                    // Auto-submit toggle
-                    Button {
-                        settings.outputAutoSubmit.toggle()
-                    } label: {
-                        Image(systemName: "return.left")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(settings.outputAutoSubmit ? .white : .white.opacity(0.35))
-                            .frame(width: 24, height: 24)
-                            .background(settings.outputAutoSubmit ? Color.accentColor.opacity(0.8) : Color.white.opacity(0.08))
-                            .clipShape(Circle())
-                            .overlay(
-                                settings.outputAutoSubmit ? nil :
-                                    Image(systemName: "line.diagonal")
-                                        .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(.white.opacity(0.6))
-                                        .rotationEffect(.degrees(90))
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .help("Auto-submit (press Return after inserting)")
-
-                    // Stop button (finishes recording and runs pipeline)
-                    Button {
-                        coordinator.toggle()
-                    } label: {
-                        Image(systemName: "stop.fill")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.9))
-                            .frame(width: 24, height: 24)
-                            .background(Color.red.opacity(0.6))
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-
-                    // Cancel button (discards recording)
-                    Button {
-                        coordinator.cancel()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.8))
-                            .frame(width: 24, height: 24)
-                            .background(Color.white.opacity(0.15))
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    // Status label for post-recording states
-                    Text(coordinator.state.statusText)
-                        .font(.system(.caption, design: .rounded).weight(.medium))
-                        .foregroundColor(.white.opacity(0.7))
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.horizontal, 14)
-            .animation(.easeInOut(duration: 0.2), value: isRecording)
+            pillControls
         }
         .frame(width: 350, height: 60)
         .onChange(of: coordinator.powerLevel) { _ in
@@ -164,6 +72,102 @@ struct RecordingPillView: View {
         .onAppear {
             updateBars()
         }
+    }
+
+    @ViewBuilder
+    private var pillControls: some View {
+        HStack(spacing: 12) {
+            if isRecording {
+                // Pulsing red dot
+                Circle()
+                    .fill(Color.red)
+                    .frame(width: 10, height: 10)
+                    .scaleEffect(dotScale)
+                    .animation(
+                        .easeInOut(duration: 0.6).repeatForever(autoreverses: true),
+                        value: dotScale
+                    )
+                    .onAppear { dotScale = 1.4 }
+            } else {
+                // Spinner for post-recording states
+                ProgressView()
+                    .controlSize(.small)
+                    .colorScheme(.dark)
+            }
+
+            // Recording timer
+            Text(formatDuration(coordinator.recordingDuration))
+                .font(.system(.caption2, design: .monospaced).weight(.semibold))
+                .foregroundColor(.white.opacity(0.8))
+
+            if isRecording {
+                // Waveform bars
+                HStack(alignment: .center, spacing: 2) {
+                    ForEach(0..<30, id: \.self) { i in
+                        RoundedRectangle(cornerRadius: 1.5)
+                            .fill(Color.white.opacity(0.85))
+                            .frame(width: 3, height: barHeights[i] * 36 + 4)
+                            .animation(.easeInOut(duration: 0.1), value: barHeights[i])
+                    }
+                }
+                .frame(maxWidth: .infinity)
+
+                // Auto-submit toggle
+                Button {
+                    settings.outputAutoSubmit.toggle()
+                } label: {
+                    Image(systemName: "return.left")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(settings.outputAutoSubmit ? .white : .white.opacity(0.35))
+                        .frame(width: 24, height: 24)
+                        .background(settings.outputAutoSubmit ? Color.accentColor.opacity(0.8) : Color.white.opacity(0.08))
+                        .clipShape(Circle())
+                        .overlay(
+                            settings.outputAutoSubmit ? nil :
+                                Image(systemName: "line.diagonal")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white.opacity(0.6))
+                                    .rotationEffect(.degrees(90))
+                        )
+                }
+                .buttonStyle(.plain)
+                .help("Auto-submit (press Return after inserting)")
+
+                // Stop button (finishes recording and runs pipeline)
+                Button {
+                    coordinator.toggle()
+                } label: {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.9))
+                        .frame(width: 24, height: 24)
+                        .background(Color.red.opacity(0.6))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+
+                // Cancel button (discards recording)
+                Button {
+                    coordinator.cancel()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.8))
+                        .frame(width: 24, height: 24)
+                        .background(Color.white.opacity(0.15))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+            } else {
+                // Status label for post-recording states
+                Text(coordinator.state.statusText)
+                    .font(.system(.caption, design: .rounded).weight(.medium))
+                    .foregroundColor(.white.opacity(0.7))
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(.horizontal, 14)
+        .animation(.easeInOut(duration: 0.2), value: isRecording)
     }
 
     private func updateBars() {

@@ -42,8 +42,8 @@ targets:
         CFBundleName: Oral Scribe
         CFBundleDisplayName: Oral Scribe
         CFBundleIdentifier: com.oralscribe.app
-        CFBundleVersion: "8"
-        CFBundleShortVersionString: "1.3.4"
+        CFBundleVersion: "9"
+        CFBundleShortVersionString: "1.3.5"
         NSHumanReadableCopyright: "Copyright © 2026 Oral Scribe. All rights reserved."
         LSMinimumSystemVersion: "13.0"
         CFBundleIconFile: AppIcon

@@ -15,13 +15,7 @@ struct MenuBarPopoverView: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        if #available(macOS 26, *) {
-            popoverContent
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
-                .background(WindowTransparencyHelper())
-        } else {
-            popoverContent
-        }
+        popoverContent
     }
 
     @ViewBuilder

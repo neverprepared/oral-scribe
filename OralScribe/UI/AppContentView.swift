@@ -168,14 +168,11 @@ struct AppContentView: View {
                 sidebarRecordButton
                     .padding(12)
             }
-            .background(SidebarTransparencyHelper(alpha: 0.1))
+            .background(SidebarTransparencyHelper(alpha: 0.5))
             .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 220)
         } detail: {
             detailPane
-                .background(Color(nsColor: .windowBackgroundColor))
         }
-        .background(.clear)
-        .background(WindowTransparencyHelper())
         .onReceive(NotificationCenter.default.publisher(for: .navigateToHistory)) { _ in
             selectedItem = .history
         }

@@ -43,6 +43,20 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
     }
 }
 
+// MARK: - Sidebar Sections
+
+struct SidebarSection {
+    let title: String
+    let items: [SidebarItem]
+
+    static let all: [SidebarSection] = [
+        SidebarSection(title: "PIPELINE", items: [.transcription, .processing, .translation, .output]),
+        SidebarSection(title: "ACTIVATION", items: [.shortcut, .voiceTrigger]),
+        SidebarSection(title: "HISTORY", items: [.history]),
+        SidebarSection(title: "SYSTEM", items: [.startup]),
+    ]
+}
+
 // MARK: - App Content View
 
 struct AppContentView: View {
@@ -53,8 +67,19 @@ struct AppContentView: View {
     var body: some View {
         NavigationSplitView {
             VStack(spacing: 0) {
-                List(SidebarItem.allCases, id: \.self, selection: $selectedItem) { item in
-                    Label(item.title, systemImage: item.icon)
+                List(selection: $selectedItem) {
+                    ForEach(SidebarSection.all, id: \.title) { section in
+                        Section {
+                            ForEach(section.items) { item in
+                                Label(item.title, systemImage: item.icon)
+                                    .tag(item)
+                            }
+                        } header: {
+                            Text(section.title)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
                 .listStyle(.sidebar)
 
@@ -296,23 +321,65 @@ struct AppWhisperCppSection: View {
     }
 }
 
+// MARK: - Ollama Status
+
+enum OllamaStatus: Equatable {
+    case idle
+    case checking
+    case connected(Int)
+    case failed
+}
+
 // MARK: - Processing Pane
 
 struct AppProcessingPane: View {
     @EnvironmentObject var settings: SettingsManager
     @State private var availableModels: [String] = []
     @State private var loadingModels = false
+    @State private var ollamaStatus: OllamaStatus = .idle
 
     var body: some View {
         Form {
             Section("Ollama") {
                 Toggle("Enable LLM Post-processing", isOn: $settings.ollamaEnabled)
+                    .onChange(of: settings.ollamaEnabled) { enabled in
+                        if enabled { refreshModels() }
+                    }
 
                 if settings.ollamaEnabled {
                     TextField("Ollama Host", text: $settings.ollamaHost)
                         .onChange(of: settings.ollamaHost) { _ in
                             refreshModels()
                         }
+
+                    // Ollama connection status
+                    HStack(spacing: 6) {
+                        switch ollamaStatus {
+                        case .idle:
+                            EmptyView()
+                        case .checking:
+                            ProgressView()
+                                .scaleEffect(0.6)
+                            Text("Checking connection…")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        case .connected(let count):
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text("Connected · \(count) model\(count == 1 ? "" : "s")")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        case .failed:
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.red)
+                            Text("Connection failed")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Button("Retry") { refreshModels() }
+                                .font(.caption)
+                        }
+                    }
 
                     HStack {
                         if availableModels.isEmpty {
@@ -369,11 +436,17 @@ struct AppProcessingPane: View {
     private func refreshModels() {
         guard settings.ollamaEnabled else { return }
         loadingModels = true
+        ollamaStatus = .checking
         let processor = OllamaProcessor(host: settings.ollamaHost)
         Task {
             let models = await processor.fetchModels()
             availableModels = models
             loadingModels = false
+            if models.isEmpty {
+                ollamaStatus = .failed
+            } else {
+                ollamaStatus = .connected(models.count)
+            }
         }
     }
 }

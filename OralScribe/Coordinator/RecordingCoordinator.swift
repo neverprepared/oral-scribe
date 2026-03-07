@@ -43,6 +43,9 @@ class RecordingCoordinator: ObservableObject {
     private var keywordDetector: KeywordDetector?
     /// Tracks the last partial text we already scanned for keywords, to avoid re-triggering.
     private var lastDeliveredPartialLength: Int = 0
+    /// Lowercased phrase cache — set once per recording session, reused on every partial result.
+    private var stopPhraseLower = ""
+    private var deliverPhraseLower = ""
 
     private static let maxHistoryCount = 50
 
@@ -79,6 +82,8 @@ class RecordingCoordinator: ObservableObject {
         liveTranscript = ""
         finalTranscript = ""
         lastDeliveredPartialLength = 0
+        stopPhraseLower = settings.stopPhrase.lowercased()
+        deliverPhraseLower = settings.deliverPhrase.lowercased()
 
         startRecordingTimer()
         NSSound(named: .init("Tink"))?.play()
@@ -132,7 +137,7 @@ class RecordingCoordinator: ObservableObject {
                 let lowered = partial.lowercased()
 
                 // Check stop phrase first (more specific)
-                if lowered.hasSuffix(settings.stopPhrase.lowercased()) {
+                if lowered.hasSuffix(stopPhraseLower) {
                     let cleaned = stripPhrase(settings.stopPhrase, from: partial)
                     appleSpeechEngine.stopLiveTranscription()
                     audioRecorder.stopRecording()
@@ -146,7 +151,7 @@ class RecordingCoordinator: ObservableObject {
                 }
 
                 // Check deliver phrase
-                if lowered.hasSuffix(settings.deliverPhrase.lowercased()) {
+                if lowered.hasSuffix(deliverPhraseLower) {
                     let cleaned = stripPhrase(settings.deliverPhrase, from: partial)
                     if !cleaned.isEmpty {
                         await deliverAndContinue(transcript: cleaned)

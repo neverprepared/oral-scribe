@@ -67,10 +67,13 @@ class SettingsManager: ObservableObject {
         didSet { UserDefaults.standard.set(whisperTranslateMode, forKey: Keys.whisperTranslateMode) }
     }
 
-    // OpenAI API Key (Keychain)
+    // OpenAI API Key (Keychain) — cached in memory after the single init-time read
+    private var _openAIAPIKey: String = ""
+
     var openAIAPIKey: String {
-        get { Keychain.load(key: Keys.openAIAPIKey) ?? "" }
+        get { _openAIAPIKey }
         set {
+            _openAIAPIKey = newValue
             if newValue.isEmpty {
                 Keychain.delete(key: Keys.openAIAPIKey)
             } else {
@@ -161,6 +164,8 @@ class SettingsManager: ObservableObject {
 
     private init() {
         let defaults = UserDefaults.standard
+
+        _openAIAPIKey = Keychain.load(key: Keys.openAIAPIKey) ?? ""
 
         transcriptionBackend = TranscriptionBackend(
             rawValue: defaults.string(forKey: Keys.transcriptionBackend) ?? ""

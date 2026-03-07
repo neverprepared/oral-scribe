@@ -52,7 +52,7 @@ class AudioRecorder: ObservableObject {
         // Install tap at native format, convert and stream to disk
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, time in
             guard let self else { return }
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self.processTap(buffer: buffer, time: time)
             }
         }

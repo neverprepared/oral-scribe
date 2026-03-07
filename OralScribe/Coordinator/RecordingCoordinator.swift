@@ -363,13 +363,6 @@ class RecordingCoordinator: ObservableObject {
         audioRecorder.stopRecording()
         state = .transcribing
 
-        // Refresh Whisper engine with latest settings
-        openAIWhisperEngine.apiKey = settings.openAIAPIKey
-        openAIWhisperEngine.model = settings.openAIModel
-        openAIWhisperEngine.translateMode = settings.whisperTranslateMode
-        ollamaProcessor.host = settings.ollamaHost
-        ollamaProcessor.model = settings.ollamaModel
-
         Task {
             do {
                 let wavURL = try audioRecorder.exportToWAV()
@@ -392,8 +385,7 @@ class RecordingCoordinator: ObservableObject {
         let phraseLower = phrase.lowercased()
 
         if lowered.hasSuffix(phraseLower) {
-            let end = trimmed.index(trimmed.endIndex, offsetBy: -phraseLower.count)
-            return String(trimmed[trimmed.startIndex..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
+            return String(trimmed.dropLast(phraseLower.count)).trimmingCharacters(in: .whitespacesAndNewlines)
         }
         return trimmed
     }

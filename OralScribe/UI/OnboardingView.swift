@@ -13,16 +13,19 @@ struct OnboardingView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Content
-            Group {
-                switch currentStep {
-                case 0: welcomeStep
-                case 1: outputStep
-                case 2: hotkeyStep
-                case 3: finishStep
-                default: EmptyView()
+            ScrollView {
+                Group {
+                    switch currentStep {
+                    case 0: welcomeStep
+                    case 1: outputStep
+                    case 2: hotkeyStep
+                    case 3: finishStep
+                    default: EmptyView()
+                    }
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             Divider()
 
@@ -53,7 +56,7 @@ struct OnboardingView: View {
             }
             .padding()
         }
-        .frame(width: 480, height: 400)
+        .frame(minWidth: 520, minHeight: 460)
     }
 
     // MARK: - Step 1: Welcome / Engine Picker

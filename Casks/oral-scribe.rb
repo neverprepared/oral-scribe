@@ -1,6 +1,6 @@
 cask "oral-scribe" do
-  version "1.3.5"
-  sha256 "3a92a7e5a95b7a465cc56f0161512458bbb85bcbd4cd048d70ed1b13db65ec57"
+  version "1.3.6"
+  sha256 "2640f48f3c3a1457ffdcb294af120ee1454e2ebbb5e4493249d0beb83e31707e"
 
   url "https://github.com/neverprepared/oral-scribe/releases/download/v#{version}/OralScribe.dmg"
   name "Oral Scribe"

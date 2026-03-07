@@ -130,6 +130,9 @@ class SettingsManager: ObservableObject {
     @Published var outputFilePath: String {
         didSet { UserDefaults.standard.set(outputFilePath, forKey: Keys.outputFilePath) }
     }
+    @Published var outputAutoSubmit: Bool {
+        didSet { UserDefaults.standard.set(outputAutoSubmit, forKey: Keys.outputAutoSubmit) }
+    }
 
     private enum Keys {
         static let transcriptionBackend = "transcriptionBackend"
@@ -155,6 +158,7 @@ class SettingsManager: ObservableObject {
         static let outputToAppleNotes = "outputToAppleNotes"
         static let outputToFile = "outputToFile"
         static let outputFilePath = "outputFilePath"
+        static let outputAutoSubmit = "outputAutoSubmit"
     }
 
     private init() {
@@ -195,5 +199,6 @@ class SettingsManager: ObservableObject {
         outputToAppleNotes = defaults.bool(forKey: Keys.outputToAppleNotes)
         outputToFile = defaults.bool(forKey: Keys.outputToFile)
         outputFilePath = defaults.string(forKey: Keys.outputFilePath) ?? ""
+        outputAutoSubmit = defaults.bool(forKey: Keys.outputAutoSubmit)
     }
 }

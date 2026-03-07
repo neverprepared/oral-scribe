@@ -18,6 +18,12 @@ class OutputManager {
         // Active field injection — sends directly to the target process, no focus change needed
         if settings.outputToActiveField {
             AccessibilityOutput.inject(text, into: targetApp)
+            if settings.outputAutoSubmit {
+                // Delay to let the injected text settle before sending Return
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    AccessibilityOutput.sendReturn(to: targetApp?.processIdentifier)
+                }
+            }
         }
 
         // Apple Notes

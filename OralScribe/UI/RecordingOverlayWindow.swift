@@ -7,7 +7,7 @@ final class RecordingOverlayWindow: NSPanel {
 
     init() {
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 310, height: 60),
+            contentRect: NSRect(x: 0, y: 0, width: 350, height: 60),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -22,15 +22,16 @@ final class RecordingOverlayWindow: NSPanel {
 
         let pillView = RecordingPillView()
             .environmentObject(RecordingCoordinator.shared)
+            .environmentObject(SettingsManager.shared)
         let hostingView = NSHostingView(rootView: pillView)
-        hostingView.frame = NSRect(x: 0, y: 0, width: 310, height: 60)
+        hostingView.frame = NSRect(x: 0, y: 0, width: 350, height: 60)
         contentView = hostingView
     }
 
     func showOverlay() {
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame
-            let x = screenFrame.midX - 155
+            let x = screenFrame.midX - 175
             let y = screenFrame.minY + 100
             setFrameOrigin(NSPoint(x: x, y: y))
         }
@@ -46,6 +47,7 @@ final class RecordingOverlayWindow: NSPanel {
 
 struct RecordingPillView: View {
     @EnvironmentObject var coordinator: RecordingCoordinator
+    @EnvironmentObject var settings: SettingsManager
     @State private var barHeights: [CGFloat] = Array(repeating: 0.15, count: 30)
     @State private var dotScale: CGFloat = 1.0
 
@@ -86,6 +88,20 @@ struct RecordingPillView: View {
                 }
                 .frame(maxWidth: .infinity)
 
+                // Auto-submit toggle
+                Button {
+                    settings.outputAutoSubmit.toggle()
+                } label: {
+                    Image(systemName: settings.outputAutoSubmit ? "return.left" : "return.left")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(settings.outputAutoSubmit ? .white : .white.opacity(0.35))
+                        .frame(width: 24, height: 24)
+                        .background(settings.outputAutoSubmit ? Color.blue.opacity(0.6) : Color.white.opacity(0.1))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help("Auto-submit (press Return after inserting)")
+
                 // Stop button (finishes recording and runs pipeline)
                 Button {
                     coordinator.toggle()
@@ -114,7 +130,7 @@ struct RecordingPillView: View {
             }
             .padding(.horizontal, 14)
         }
-        .frame(width: 310, height: 60)
+        .frame(width: 350, height: 60)
         .onChange(of: coordinator.powerLevel) { _ in
             updateBars()
         }

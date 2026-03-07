@@ -416,6 +416,10 @@ struct AppOutputPane: View {
                 Toggle("Append to File", isOn: $settings.outputToFile)
             }
 
+            Section("Behavior") {
+                Toggle("Auto-submit (press Return after inserting)", isOn: $settings.outputAutoSubmit)
+            }
+
             if settings.outputToFile {
                 Section("File Path") {
                     HStack {

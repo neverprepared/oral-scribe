@@ -93,6 +93,24 @@ struct AccessibilityOutput {
         }
     }
 
+    // MARK: - Auto-submit (Return keystroke)
+
+    static func sendReturn(to pid: pid_t?) {
+        let source = CGEventSource(stateID: .hidSystemState)
+        guard
+            let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x24, keyDown: true),
+            let keyUp   = CGEvent(keyboardEventSource: source, virtualKey: 0x24, keyDown: false)
+        else { return }
+
+        if let pid {
+            keyDown.postToPid(pid)
+            keyUp.postToPid(pid)
+        } else {
+            keyDown.post(tap: .cghidEventTap)
+            keyUp.post(tap: .cghidEventTap)
+        }
+    }
+
     // MARK: - Permission
 
     static var isAccessibilityEnabled: Bool {

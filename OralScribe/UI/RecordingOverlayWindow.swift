@@ -124,10 +124,15 @@ struct RecordingPillView: View {
     }
 
     private func updateBars() {
-        let normalized = max(0, min(1, CGFloat(coordinator.powerLevel + 60) / 60))
+        let power = coordinator.powerLevel
+        guard power > -155 else {
+            // Silence — flatten without generating 30 random values
+            if barHeights[0] != 0.05 { barHeights = Array(repeating: 0.05, count: 30) }
+            return
+        }
+        let normalized = max(0, min(1, CGFloat(power + 60) / 60))
         for i in 0..<30 {
-            let jitter = CGFloat.random(in: -0.15...0.15)
-            barHeights[i] = max(0.05, min(1.0, normalized + jitter))
+            barHeights[i] = max(0.05, min(1.0, normalized + CGFloat.random(in: -0.15...0.15)))
         }
     }
 

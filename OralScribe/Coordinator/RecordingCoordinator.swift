@@ -433,31 +433,26 @@ class RecordingCoordinator: ObservableObject {
         await OutputManager.shared.deliver(text, settings: settings, targetApp: targetApp)
 
         // Append to history
+        let info = processingInfo
         let entry = TranscriptEntry(
             text: text,
             duration: recordingDuration,
-            processingMode: processingLabel,
-            processingModel: processingModelName
+            processingMode: info?.mode,
+            processingModel: info?.model
         )
         history.insert(entry, at: 0)
         if history.count > Self.maxHistoryCount {
-            history = Array(history.prefix(Self.maxHistoryCount))
+            history.removeLast()
         }
         HistoryStore.save(history)
 
         NSSound(named: .init("Glass"))?.play()
     }
 
-    /// Current processing mode label, if active.
-    private var processingLabel: String? {
+    /// Processing mode + model name if LLM post-processing is active — reads settings once.
+    private var processingInfo: (mode: String, model: String)? {
         guard settings.ollamaEnabled, settings.processingMode != .passthrough else { return nil }
-        return settings.processingMode.displayName
-    }
-
-    /// Current processing model name, if active.
-    private var processingModelName: String? {
-        guard settings.ollamaEnabled, settings.processingMode != .passthrough else { return nil }
-        return settings.ollamaModel
+        return (settings.processingMode.displayName, settings.ollamaModel)
     }
 
     // MARK: - Post-Processing Pipeline
@@ -505,15 +500,16 @@ class RecordingCoordinator: ObservableObject {
         targetApp = nil
 
         // Append to history
+        let info = processingInfo
         let entry = TranscriptEntry(
             text: text,
             duration: recordingDuration,
-            processingMode: processingLabel,
-            processingModel: processingModelName
+            processingMode: info?.mode,
+            processingModel: info?.model
         )
         history.insert(entry, at: 0)
         if history.count > Self.maxHistoryCount {
-            history = Array(history.prefix(Self.maxHistoryCount))
+            history.removeLast()
         }
         HistoryStore.save(history)
 

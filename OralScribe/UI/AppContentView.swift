@@ -143,10 +143,7 @@ struct AppTranscriptionPane: View {
 
             if settings.transcriptionBackend == .openAIWhisper {
                 Section("OpenAI Whisper") {
-                    SecureField("API Key", text: Binding(
-                        get: { settings.openAIAPIKey },
-                        set: { settings.openAIAPIKey = $0 }
-                    ))
+                    SecureField("API Key", text: $settings.openAIAPIKey)
                     TextField("Model", text: $settings.openAIModel)
                     Toggle("Translation Mode (transcribe to English)", isOn: $settings.whisperTranslateMode)
                 }
@@ -224,6 +221,10 @@ struct AppWhisperCppSection: View {
     @EnvironmentObject var settings: SettingsManager
     @ObservedObject private var manager = SwiftWhisperManager.shared
 
+    private var currentModel: WhisperCppModel? {
+        SwiftWhisperManager.availableModels.first { $0.id == settings.whisperCppModel }
+    }
+
     var body: some View {
         Section("Whisper.cpp (On-Device)") {
             Picker("Model", selection: $settings.whisperCppModel) {
@@ -277,8 +278,7 @@ struct AppWhisperCppSection: View {
                 }
             }
 
-            if let model = SwiftWhisperManager.availableModels.first(where: { $0.id == settings.whisperCppModel }),
-               manager.isDownloaded(model) {
+            if let model = currentModel, manager.isDownloaded(model) {
                 HStack {
                     Image(systemName: "internaldrive").foregroundColor(.secondary)
                     Text("Downloaded · \(model.sizeNote)").font(.caption).foregroundColor(.secondary)

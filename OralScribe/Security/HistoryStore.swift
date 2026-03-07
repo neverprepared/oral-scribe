@@ -67,9 +67,14 @@ enum HistoryStore {
     /// Injectable Keychain — override in tests to avoid real Keychain access.
     static var keychain: any KeychainStore = DefaultKeychainStore()
 
+    /// In-memory cache — avoids AES decrypt + JSON decode on every load() call.
+    private static var cache: [TranscriptEntry]?
+
     // MARK: - Public API
 
     static func load() -> [TranscriptEntry] {
+        if let cached = cache { return cached }
+
         guard let key = loadOrCreateKey() else {
             print("OralScribe: HistoryStore could not obtain encryption key — history unavailable")
             return []
@@ -78,6 +83,7 @@ enum HistoryStore {
         // Encrypted path (normal)
         if let blob = defaults.data(forKey: encryptedKey) {
             if let entries = decrypt(blob, using: key) {
+                cache = entries
                 return entries
             }
             // Corrupted blob — clear and start fresh
@@ -104,10 +110,12 @@ enum HistoryStore {
             print("OralScribe: HistoryStore could not encrypt history")
             return
         }
+        cache = entries
         defaults.set(blob, forKey: encryptedKey)
     }
 
     static func clear() {
+        cache = nil
         defaults.removeObject(forKey: encryptedKey)
         defaults.removeObject(forKey: plaintextKey)
     }

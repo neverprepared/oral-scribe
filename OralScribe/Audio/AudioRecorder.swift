@@ -13,12 +13,6 @@ class AudioRecorder: ObservableObject {
     private var recordingFile: AVAudioFile?
     private var recordingConverter: AVAudioConverter?
     private var recordingURL: URL?
-    private var recordingStartTime: Date?
-
-    var recordingDuration: TimeInterval {
-        guard let start = recordingStartTime else { return 0 }
-        return Date().timeIntervalSince(start)
-    }
 
     // MARK: - Start
 
@@ -26,7 +20,6 @@ class AudioRecorder: ObservableObject {
         guard !isRecording else { return }
 
         bufferCallback = bufferHandler
-        recordingStartTime = Date()
 
         let inputNode = audioEngine.inputNode
         let inputFormat = inputNode.outputFormat(forBus: 0)

@@ -67,19 +67,14 @@ class SettingsManager: ObservableObject {
         didSet { UserDefaults.standard.set(whisperTranslateMode, forKey: Keys.whisperTranslateMode) }
     }
 
-    // OpenAI API Key (Keychain) — cached in memory after the single init-time read
-    private var _openAIAPIKey: String = ""
-
-    var openAIAPIKey: String {
-        get { _openAIAPIKey }
-        set {
-            _openAIAPIKey = newValue
-            if newValue.isEmpty {
+    // OpenAI API Key — @Published for direct binding; persisted to Keychain on change.
+    @Published var openAIAPIKey: String = "" {
+        didSet {
+            if openAIAPIKey.isEmpty {
                 Keychain.delete(key: Keys.openAIAPIKey)
             } else {
-                Keychain.save(key: Keys.openAIAPIKey, value: newValue)
+                Keychain.save(key: Keys.openAIAPIKey, value: openAIAPIKey)
             }
-            objectWillChange.send()
         }
     }
 
@@ -165,7 +160,7 @@ class SettingsManager: ObservableObject {
     private init() {
         let defaults = UserDefaults.standard
 
-        _openAIAPIKey = Keychain.load(key: Keys.openAIAPIKey) ?? ""
+        _openAIAPIKey = Published(wrappedValue: Keychain.load(key: Keys.openAIAPIKey) ?? "")
 
         transcriptionBackend = TranscriptionBackend(
             rawValue: defaults.string(forKey: Keys.transcriptionBackend) ?? ""
